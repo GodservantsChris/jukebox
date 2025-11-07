@@ -3,6 +3,8 @@
 # Jukebox
 Code for "Jukebox: A Generative Model for Music"
 
+Forked from Openai/jukebox.git by GodservantsChris on 2025_11_06 for compatibility with Python 3.12.
+
 [Paper](https://arxiv.org/abs/2005.00341) 
 [Blog](https://openai.com/blog/jukebox) 
 [Explorer](http://jukebox.openai.com/) 
