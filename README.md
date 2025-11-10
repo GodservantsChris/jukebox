@@ -3,47 +3,61 @@
 # Jukebox
 Code for "Jukebox: A Generative Model for Music"
 
-Forked from Openai/jukebox.git by GodservantsChris on 2025_11_06 for compatibility with Python 3.13.2.
+Forked from Openai/jukebox.git by GodservantsChris on 2025_11_06 for compatibility with Python 3.12.4.
 
 [Paper](https://arxiv.org/abs/2005.00341) 
 [Blog](https://openai.com/blog/jukebox) 
 [Explorer](http://jukebox.openai.com/) 
 [Colab](https://colab.research.google.com/github/openai/jukebox/blob/master/jukebox/Interacting_with_Jukebox.ipynb) 
 
-# Install
+# Conda Install
 Install the conda package manager from https://docs.conda.io/en/latest/miniconda.html    
-    
-``` 
-# Required: Sampling
-conda create --name jukebox python=3.13.2
-conda activate jukebox
-conda install mpi4py=3.0.3 # if this fails, try: pip install mpi4py==3.0.3
-conda install pytorch=1.4 torchvision=0.5 cudatoolkit=10.0 -c pytorch
-git clone https://github.com/openai/jukebox.git
-cd jukebox
-pip install -r requirements.txt
-pip install -e .
+
+# Conda Activationn
+## Initialize after installation in a system command prompt
+C:\Users\<YourUsername>>C:\Users\<YourUsername>\Miniconda3\Scripts\conda.exe init cmd.exe  
+Close the command prompt
+### Verfication
+Re-open the command prompt and enter:  
+C:\Users\<YourUsername>>conda --version
+C:\Users\<YourUsername>>conda init powershell
+
+# Conda Environment Setup
+## At IDE Powershell Command Prompt
+conda create --name jukebox python=3.12.4  
+
+# Conda Environment Activation
+## At IDE Powershell Command Prompt
+conda activate jukebox  
+conda install mpi4py-4.0.3
+conda install pytorch=2.6.0  
+conda install torchvision=0.20.1  
+conda install cudatoolkit=11.8.0  
+
+pip install -r requirements.txt  
+pip install -e .  
 
 # Required: Training
-conda install av=7.0.01 -c conda-forge 
+conda install av==14.2.0 -c conda-forge  
 pip install ./tensorboardX
  
 # Optional: Apex for faster training with fused_adam
 conda install pytorch=1.1 torchvision=0.3 cudatoolkit=10.0 -c pytorch
 pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./apex
-```
+
+# Models
+## From Hugging Face
+wget https://huggingface.co/Leo71288/Jukebox_Prior_1B  
 
 # Sampling
 ## Sampling from scratch
 To sample normally, run the following command. Model can be `5b`, `5b_lyrics`, `1b_lyrics`
 ``` 
-python jukebox/sample.py --model=5b_lyrics --name=sample_5b --levels=3 --sample_length_in_seconds=20 \
---total_sample_length_in_seconds=180 --sr=44100 --n_samples=6 --hop_fraction=0.5,0.5,0.125
+python jukebox/sample.py --model=1b_lyrics --name=sample_1b --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
+```
+python jukebox/sample.py --model=5b_lyrics --name=sample_5b --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=6 --hop_fraction=0.5,0.5,0.125
 ```
 ``` 
-python jukebox/sample.py --model=1b_lyrics --name=sample_1b --levels=3 --sample_length_in_seconds=20 \
---total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
-```
 The above generates the first `sample_length_in_seconds` seconds of audio from a song of total length `total_sample_length_in_seconds`.
 To use multiple GPU's, launch the above scripts as `mpiexec -n {ngpus} python jukebox/sample.py ...` so they use `{ngpus}`
 
@@ -61,9 +75,7 @@ On a V100, it takes about 3 hrs to fully sample 20 seconds of music. Since this 
 
 To continue sampling from already generated codes for a longer duration, you can run
 ```
-python jukebox/sample.py --model=5b_lyrics --name=sample_5b --levels=3 --mode=continue \
---codes_file=sample_5b/level_0/data.pth.tar --sample_length_in_seconds=40 --total_sample_length_in_seconds=180 \
---sr=44100 --n_samples=6 --hop_fraction=0.5,0.5,0.125
+python jukebox/sample.py --model=5b_lyrics --name=sample_5b --levels=3 --mode=continue --codes_file=sample_5b/level_0/data.pth.tar --sample_length_in_seconds=40 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=6 --hop_fraction=0.5,0.5,0.125
 ```
 Here, we take the 20 seconds samples saved from the first sampling run at `sample_5b/level_0/data.pth.tar` and continue by adding 20 more seconds. 
 
@@ -72,9 +84,7 @@ You could also continue directly from the level 2 saved outputs, just pass `--co
 
 If you stopped sampling at only the first level and want to upsample the saved codes, you can run
 ```
-python jukebox/sample.py --model=5b_lyrics --name=sample_5b --levels=3 --mode=upsample \
---codes_file=sample_5b/level_2/data.pth.tar --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 \
---sr=44100 --n_samples=6 --hop_fraction=0.5,0.5,0.125
+python jukebox/sample.py --model=5b_lyrics --name=sample_5b --levels=3 --mode=upsample --codes_file=sample_5b/level_2/data.pth.tar --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=6 --hop_fraction=0.5,0.5,0.125
 ```
 Here, we take the 20 seconds samples saved from the first sampling run at `sample_5b/level_2/data.pth.tar` and upsample the lower two levels.
 
