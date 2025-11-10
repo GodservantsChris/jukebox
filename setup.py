@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 setup(
     name="jukebox",
     py_modules=["jukebox"],
-    version="1.0",
+    version="1.1",
     description="",
     author="OpenAI",
     packages=find_packages(),
