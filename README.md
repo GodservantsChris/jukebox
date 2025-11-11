@@ -47,7 +47,8 @@ pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cud
 
 # Models
 ## From Hugging Face
-wget https://huggingface.co/Leo71288/Jukebox_Prior_1B  
+wget https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/artists.json -OutFile artists.json  
+In PowerShell command, run the Downloaks.ps1 script (or run each loop in the command line)
 
 # Sampling
 ## Sampling from scratch

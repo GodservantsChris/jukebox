@@ -1,0 +1,7 @@
+https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/artists.json
+https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/config.json
+https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/genres.json
+https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/lyrics.json
+https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/pytorch_model.bin.index.json
+https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/special_tokens_map.json
+https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/tokenizer_config.json
