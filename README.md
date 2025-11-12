@@ -46,8 +46,9 @@ conda install pytorch=1.1 torchvision=0.3 cudatoolkit=10.0 -c pytorch
 pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./apex
 
 # Models
-## From Hugging Face
+## Single files downloading
 wget https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/artists.json -OutFile artists.json  
+## Batched files downloading
 In PowerShell command, run the Downloaks.ps1 script (or run each loop in the command line)
 
 # Sampling
