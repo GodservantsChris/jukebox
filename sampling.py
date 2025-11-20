@@ -1,4 +1,4 @@
-from jukebox import sample
+#from jukebox import sample
 
 def sample_lyrics_1b():
     emsgContext = f"sampling.sample_lyrics_1b"
@@ -8,5 +8,8 @@ def sample_lyrics_1b():
     except:
         print(f"Exception in " + emsgContext + f" while " + emsgOperation)
     finally:
-        print(f"Done.")    
+        print(f"Done.")   
+
+# Call desired code
+sample_lyrics_1b() 
 

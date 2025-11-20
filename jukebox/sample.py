@@ -268,12 +268,34 @@ def save_samples(model, device, hps, sample_hps):
 
 def run(model, mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, port=29500, **kwargs):
     from jukebox.utils.dist_utils import setup_dist_from_mpi
-    rank, local_rank, device = setup_dist_from_mpi(port=port)
-    hps = Hyperparams(**kwargs)
-    sample_hps = Hyperparams(dict(mode=mode, codes_file=codes_file, audio_file=audio_file, prompt_length_in_seconds=prompt_length_in_seconds))
-
-    with t.no_grad():
-        save_samples(model, device, hps, sample_hps)
+    emsgContext = f"sample.run()"
+    emsgOperation = f""
+    try:        
+        emsgOperation = f"validating model input"
+        if model:
+            emsgOperation = f"setting up distributed devices and getting device from mpi"
+            dictSetup = setup_dist_from_mpi(port=port, backend = f"gloo", verbose=True)
+            rank = dictSetup[0]
+            local_rank = dictSetup[1]
+            device = dictSetup[2]
+            emsgOperation = f"validating device"
+            if device:
+                emsgOperation = f"creating Hyperparams from **kwargs (" + str(kwargs) + f")"
+                hps = Hyperparams(**kwargs)
+                emsgOperation = f"creating Hyperparams from input args" + f"; rank = " + str(rank)  + f"; local_rank = " + str(local_rank) + f"; device = "+ str(device) + f";"
+                sample_hps = Hyperparams(dict(mode=mode, codes_file=codes_file, audio_file=audio_file, prompt_length_in_seconds=prompt_length_in_seconds))
+                emsgOperation = f"saving samples when torch gradient calculations are disabled"
+                with t.no_grad():
+                    emsgOperation += f"; saving samples"
+                    #save_samples(model, device, hps, sample_hps)
+            else: raise NameError
+        else: raise NameError
+    except NameError as e:
+        print(f'NameError Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e))
+    except Exception as e:
+        print(f'Exception while ' + emsgOperation + f' in ' + emsgContext + f': ' + repr(e))
+    finally:
+        print(f'Completed: ' + emsgContext)
 
 if __name__ == '__main__':
     fire.Fire(run)

@@ -3,7 +3,7 @@
 # Jukebox
 Code for "Jukebox: A Generative Model for Music"
 
-Forked from Openai/jukebox.git by GodservantsChris on 2025_11_06 for compatibility with Python 3.12.4.
+Forked from Openai/jukebox.git by GodservantsChris on 2025_11_06 for porting Jukebox from Python 3.8 to Python 3.12.4.
 
 [Paper](https://arxiv.org/abs/2005.00341) 
 [Blog](https://openai.com/blog/jukebox) 
@@ -13,7 +13,7 @@ Forked from Openai/jukebox.git by GodservantsChris on 2025_11_06 for compatibili
 # Conda Install
 Install the conda package manager from https://docs.conda.io/en/latest/miniconda.html    
 
-# Conda Activationn
+# Conda Activation
 ## Initialize after installation in a system command prompt
 C:\Users\<YourUsername>>C:\Users\<YourUsername>\Miniconda3\Scripts\conda.exe init cmd.exe  
 Close the command prompt
@@ -28,7 +28,16 @@ conda create --name jukebox python=3.12.4
 
 # Conda Environment Activation
 ## At IDE Powershell Command Prompt
-conda activate jukebox  
+conda activate jukebox 
+
+# Set the Correct Python Interpreter in VS Code
+To make sure VS Code uses the jukebox environment for all Python operations:  
+- Press Ctrl + Shift + P → type “Python: Select Interpreter”  
+- Choose the one that looks like:  
+ (jukebox) C:\Users\<YourUsername>\Miniconda3\envs\jukebox\python.exe
+
+# Install required modules
+The installed files are located at C:\Users\<YourUsername>\miniconda3\envs\jukebox\Lib\site-packages  
 conda install mpi4py-4.0.3
 conda install pytorch=2.6.0  
 conda install torchvision=0.20.1  
@@ -37,12 +46,11 @@ conda install cudatoolkit=11.8.0
 pip install -r requirements.txt  
 pip install -e .  
 
-# Required: Training
+## Required: Training
 conda install av==14.2.0 -c conda-forge  
 pip install ./tensorboardX
  
-# Optional: Apex for faster training with fused_adam
-conda install pytorch=1.1 torchvision=0.3 cudatoolkit=10.0 -c pytorch
+## Optional: Apex for faster training with fused_adam
 pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./apex
 
 # Models
@@ -52,6 +60,11 @@ wget https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/artists.json -
 In PowerShell command, run the Downloaks.ps1 script (or run each loop in the command line)
 
 # Sampling
+## Disable the libuv backend
+### Set the USE_LIVUV environment variable to false
+#### Powershell
+$env:USE_LIBUV = "0"  
+
 ## Sampling from scratch
 To sample normally, run the following command. Model can be `5b`, `5b_lyrics`, `1b_lyrics`
 ``` 
