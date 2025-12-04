@@ -100,10 +100,10 @@ wget https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/artists.json -
 In PowerShell command, run the Downloaks.ps1 script (or run each loop in the command line)
 
 # Sampling
-## Sampling from scratch
 To sample normally, run the following command. Model can be `5b`, `5b_lyrics`, `1b_lyrics`
+## Sampling from scratch
+### For gloo backend (Desktop environment)
 ``` 
-### For gloo backend (desktop environment)
 python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=sample_1b --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
 ```
 ### For nccl backend (Colab environment)
