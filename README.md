@@ -86,14 +86,20 @@ To make sure VS Code uses the jukebox environment for all Python operations:
  (jukebox) C:\Users\<YourUsername>\Miniconda3\envs\jukebox\python.exe
 
 # Install required modules
-## Sampling
+## For Sampling
+### mpi4py
 conda install mpi4py=4.0.3  
-conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidiay  
-
+### cuda and torch
+#### Windows Desktop Environment
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidiay 
+#### Colab environment
+conda install cuda-cudart cuda-version=12
+conda install pytorch torchvision torchaudio
+### In requirements.txt
 pip install -r requirements.txt  
 pip install -e .  
 
-## Training
+## For Training
 conda install av==14.2.0 -c conda-forge  
 pip install ./tensorboardX
  
