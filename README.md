@@ -87,7 +87,7 @@ To make sure VS Code uses the jukebox environment for all Python operations:
 
 # Install required modules
 ## Sampling
-conda install mpi4py-4.0.3
+conda install mpi4py=4.0.3  
 conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidiay  
 
 pip install -r requirements.txt  
