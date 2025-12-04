@@ -107,9 +107,12 @@ pip install ./tensorboardX
 pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./apex
 
 # Models
-## Single files downloading
+## Colab Environment
+wget https://huggingface.co/openai/jukebox-1b-lyrics  
+## Windows Desktop Environment
+### Single files downloading
 wget https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/artists.json -OutFile artists.json  
-## Batched files downloading
+### Batched files downloading
 In PowerShell command, run the Downloaks.ps1 script (or run each loop in the command line)
 
 # Sampling
