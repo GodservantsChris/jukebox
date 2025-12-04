@@ -67,15 +67,17 @@ def init_process_group(backend, init_method):
             if is_available:
                 emsgOperation = f"calling base initialization"
                 res = _init_process_group(backend, init_method)
+                return res
             #else: do nothing
         else: raise NameError
     except NameError as e:
-        print(f'NameError Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e))
+        res = None
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
     except Exception as e:
-        print(f'Exception while ' + emsgOperation + f' in ' + emsgContext + f': ' + repr(e))
-    finally:
-        print(f'Completed: ' + emsgContext + f"; res = " + str(res))
-        return res
+        res = None
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
 
 def _get_rank():
     return dist.get_rank()
@@ -102,21 +104,31 @@ def _init_process_group(backend, init_method):
     res = None
     emsgContext = f"dist_adapter._init_process_group(...)"
     emsgOperation = f""
-    try:        
+    try:
         emsgOperation = f"validating backend and init_method"
         if backend and init_method:
             emsgOperation = f"determining if the distributed service is available"
             if is_available:
-                emsgOperation = f"torch.distributed initialization"
-                print(emsgContext + f": Calling " + emsgOperation)
-                res = dist.init_process_group(backend, init_method)
-                print(emsgContext + f": " + f"Done calling " + emsgOperation)
-            #else: do nothing
+                emsgOperation = f"determining if the backend is available"
+                isBackendAvailable = False
+                if backend == "gloo": 
+                    isBackendAvailable = dist.is_gloo_available()
+                else: 
+                    if backend == "nccl": isBackendAvailable = dist.is_nccl_available()
+                if isBackendAvailable:
+                    emsgOperation = f"initializing distributed services"
+                    res = dist.init_process_group(backend, init_method)
+                    return res
+                else: raise NameError
+            else: raise NameError
         else: raise NameError
     except NameError as e:
-        print(f'NameError Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e))
+        res = None
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
     except Exception as e:
-        print(f'Exception while ' + emsgOperation + f' in ' + emsgContext + f': ' + repr(e))
-    finally:
-        print(f'Completed: ' + emsgContext + f"; res = " + str(res))
-        return res
+        res = None
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+
+

@@ -178,8 +178,9 @@ def load_codes(codes_file, duration, priors, hps):
 def save_samples(model, device, hps, sample_hps):
     print(hps)
     from jukebox.lyricdict import poems, gpt_2_lyrics
+    
     vqvae, priors = make_model(model, device, hps)
-
+    
     assert hps.sample_length//priors[-2].raw_to_tokens >= priors[-2].n_ctx, f"Upsampling needs atleast one ctx in get_z_conds. Please choose a longer sample length"
 
     total_length = hps.total_sample_length_in_seconds * hps.sr
@@ -266,7 +267,7 @@ def save_samples(model, device, hps, sample_hps):
         raise ValueError(f'Unknown sample mode {sample_hps.mode}.')
 
 
-def run(model, mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, port=29500, **kwargs):
+def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, **kwargs):
     from jukebox.utils.dist_utils import setup_dist_from_mpi
     emsgContext = f"sample.run()"
     emsgOperation = f""
@@ -274,7 +275,7 @@ def run(model, mode='ancestral', codes_file=None, audio_file=None, prompt_length
         emsgOperation = f"validating model input"
         if model:
             emsgOperation = f"setting up distributed devices and getting device from mpi"
-            dictSetup = setup_dist_from_mpi(port=port, backend = f"gloo", verbose=True)
+            dictSetup = setup_dist_from_mpi(backend = backend_to_run, verbose=True)
             rank = dictSetup[0]
             local_rank = dictSetup[1]
             device = dictSetup[2]
@@ -287,11 +288,11 @@ def run(model, mode='ancestral', codes_file=None, audio_file=None, prompt_length
                 emsgOperation = f"saving samples when torch gradient calculations are disabled"
                 with t.no_grad():
                     emsgOperation += f"; saving samples"
-                    #save_samples(model, device, hps, sample_hps)
+                    save_samples(model, device, hps, sample_hps)
             else: raise NameError
         else: raise NameError
     except NameError as e:
-        print(f'NameError Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e))
+        print(f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e))
     except Exception as e:
         print(f'Exception while ' + emsgOperation + f' in ' + emsgContext + f': ' + repr(e))
     finally:

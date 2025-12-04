@@ -83,30 +83,33 @@ def make_vqvae(hps, device='cuda'):
         top_raw_to_tokens = np.prod(downsamples)
         hps.sample_length = (hps.sample_length_in_seconds * hps.sr // top_raw_to_tokens) * top_raw_to_tokens
         print(f"Setting sample length to {hps.sample_length} (i.e. {hps.sample_length/hps.sr} seconds) to be multiple of {top_raw_to_tokens}")
+    try:
 
-    vqvae = VQVAE(input_shape=(hps.sample_length,1), levels=hps.levels, downs_t=hps.downs_t, strides_t=hps.strides_t,
-                  emb_width=hps.emb_width, l_bins=hps.l_bins,
-                  mu=hps.l_mu, commit=hps.commit,
-                  spectral=hps.spectral, multispectral=hps.multispectral,
-                  multipliers=hps.hvqvae_multipliers, use_bottleneck=hps.use_bottleneck,
-                  **block_kwargs)
+        vqvae = VQVAE(input_shape=(hps.sample_length,1), levels=hps.levels, downs_t=hps.downs_t, strides_t=hps.strides_t,
+                    emb_width=hps.emb_width, l_bins=hps.l_bins,
+                    mu=hps.l_mu, commit=hps.commit,
+                    spectral=hps.spectral, multispectral=hps.multispectral,
+                    multipliers=hps.hvqvae_multipliers, use_bottleneck=hps.use_bottleneck,
+                    **block_kwargs)
 
-    vqvae = vqvae.to(device)
-    restore_model(hps, vqvae, hps.restore_vqvae)
-    if hps.train and not hps.prior:
-        print_all(f"Loading vqvae in train mode")
-        if hps.restore_vqvae != '':
-            print_all("Reseting bottleneck emas")
-            for level, bottleneck in enumerate(vqvae.bottleneck.level_blocks):
-                num_samples = hps.sample_length
-                downsamples = calculate_strides(hps.strides_t, hps.downs_t)
-                raw_to_tokens = np.prod(downsamples[:level + 1])
-                num_tokens = (num_samples // raw_to_tokens) * dist.get_world_size()
-                bottleneck.restore_k(num_tokens=num_tokens, threshold=hps.revival_threshold)
-    else:
-        print_all(f"Loading vqvae in eval mode")
-        vqvae.eval()
-        freeze_model(vqvae)
+        vqvae = vqvae.to(device)
+        restore_model(hps, vqvae, hps.restore_vqvae)
+        if hps.train and not hps.prior:
+            print_all(f"Loading vqvae in train mode")
+            if hps.restore_vqvae != '':
+                print_all("Reseting bottleneck emas")
+                for level, bottleneck in enumerate(vqvae.bottleneck.level_blocks):
+                    num_samples = hps.sample_length
+                    downsamples = calculate_strides(hps.strides_t, hps.downs_t)
+                    raw_to_tokens = np.prod(downsamples[:level + 1])
+                    num_tokens = (num_samples // raw_to_tokens) * dist.get_world_size()
+                    bottleneck.restore_k(num_tokens=num_tokens, threshold=hps.revival_threshold)
+        else:
+            print_all(f"Loading vqvae in eval mode")
+            vqvae.eval()
+            freeze_model(vqvae)
+    except AssertionError as e:
+        print(f"CJM1: " + repr(e))
     return vqvae
 
 def make_prior(hps, vqvae, device='cuda'):

@@ -3,50 +3,90 @@
 # Jukebox
 Code for "Jukebox: A Generative Model for Music"
 
-Forked from Openai/jukebox.git by GodservantsChris on 2025_11_06 for porting Jukebox from Python 3.8 to Python 3.12.4.
+Forked from Openai/jukebox.git by GodservantsChris on 2025_11_06 for porting Jukebox from Python 3.8 to Python 3.12.12.
 
 [Paper](https://arxiv.org/abs/2005.00341) 
 [Blog](https://openai.com/blog/jukebox) 
 [Explorer](http://jukebox.openai.com/) 
 [Colab](https://colab.research.google.com/github/openai/jukebox/blob/master/jukebox/Interacting_with_Jukebox.ipynb) 
 
-# Conda Install
+# File locations
+## Colab IDE
+Files and folders you create or clone (like the Jukebox repo) live in /content/, which is part of a remote server provided by Colab.
+- This environment is ephemeral — meaning it resets when the session ends or times out. Any unsaved files will be lost.  
+
+Installed files are located at:  
+!ls -la /usr/local/lib/python3.12/dist-packages/
+
+If you mount your Google Drive, you can manually navigate to:  
+cd /content/drive/MyDrive/  
+and save files there.  
+For example, save output files to an output directory:  
+Python:  
+import os  
+output_dir = '/content/drive/MyDrive/jukebox_outputs'  
+os.makedirs(output_dir, exist_ok=True)  
+
+When your script generates a .wav or .pth.tar file, copy it to your Drive folder:  
+Python:  
+!cp /content/jukebox/samples/sample.wav output_dir  
+
+When sampling using jukebox, use the full path in the --name parameter to control where outputs go:
+!python jukebox/sample.py \
+  --model=1b_lyrics \
+  --name=/content/drive/MyDrive/jukebox_outputs/somesubfoldername \
+  --levels=3 \
+  --sample_length_in_seconds=20 \
+  --total_sample_length_in_seconds=60 \
+  --sr=44100 \
+  --n_samples=1 \
+  --hop_fraction=0.5,0.5,0.125
+
+## Windows Desktop
+For Desktop VS Code IDE the installed files (conda or pip installs) are located at C:\Users\<YourUsername>\miniconda3\envs\jukebox\Lib\site-packages  
+
+# Clone the jukebox repository
+git clone https://[URLtorepositorywithjukeboxcode]  
+For example:  
+!git clone -b Jukebox-Python_3_12 https://github.com/[github username]/jukebox.git
+cd jukebox  
+
+# Windows Desktop Environment Setup
+## Conda Install
 Install the conda package manager from https://docs.conda.io/en/latest/miniconda.html    
 
-# Conda Activation
-## Initialize after installation in a system command prompt
+## Conda Activation
+### Initialize after installation in a system command prompt
 C:\Users\<YourUsername>>C:\Users\<YourUsername>\Miniconda3\Scripts\conda.exe init cmd.exe  
 Close the command prompt
-### Verfication
+#### Verfication
 Re-open the command prompt and enter:  
 C:\Users\<YourUsername>>conda --version
 C:\Users\<YourUsername>>conda init powershell
 
 # Conda Environment Setup
 ## At IDE Powershell Command Prompt
-conda create --name jukebox python=3.12.4  
+conda create --name jukebox python=3.12.12  
 
 # Conda Environment Activation
 ## At IDE Powershell Command Prompt
 conda activate jukebox 
 
-# Set the Correct Python Interpreter in VS Code
+## If Desktop VS Code IDE - Set the Correct Python Interpreter
 To make sure VS Code uses the jukebox environment for all Python operations:  
 - Press Ctrl + Shift + P → type “Python: Select Interpreter”  
 - Choose the one that looks like:  
  (jukebox) C:\Users\<YourUsername>\Miniconda3\envs\jukebox\python.exe
 
 # Install required modules
-The installed files are located at C:\Users\<YourUsername>\miniconda3\envs\jukebox\Lib\site-packages  
+## Sampling
 conda install mpi4py-4.0.3
-conda install pytorch=2.6.0  
-conda install torchvision=0.20.1  
-conda install cudatoolkit=11.8.0  
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidiay  
 
 pip install -r requirements.txt  
 pip install -e .  
 
-## Required: Training
+## Training
 conda install av==14.2.0 -c conda-forge  
 pip install ./tensorboardX
  
@@ -60,18 +100,14 @@ wget https://huggingface.co/openai/Jukebox-1b-lyrics/resolve/main/artists.json -
 In PowerShell command, run the Downloaks.ps1 script (or run each loop in the command line)
 
 # Sampling
-## Disable the libuv backend
-### Set the USE_LIVUV environment variable to false
-#### Powershell
-$env:USE_LIBUV = "0"  
-
 ## Sampling from scratch
 To sample normally, run the following command. Model can be `5b`, `5b_lyrics`, `1b_lyrics`
 ``` 
-python jukebox/sample.py --model=1b_lyrics --name=sample_1b --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
+### For gloo backend (desktop environment)
+python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=sample_1b --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
 ```
-python jukebox/sample.py --model=5b_lyrics --name=sample_5b --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=6 --hop_fraction=0.5,0.5,0.125
-```
+### For nccl backend (Colab environment)
+python jukebox/sample.py --model=1b_lyrics --backend_to_run=nccl --name=sample_1b --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
 ``` 
 The above generates the first `sample_length_in_seconds` seconds of audio from a song of total length `total_sample_length_in_seconds`.
 To use multiple GPU's, launch the above scripts as `mpiexec -n {ngpus} python jukebox/sample.py ...` so they use `{ngpus}`
