@@ -51,12 +51,21 @@ For example:
 !git clone -b Jukebox-Python_3_12 https://github.com/[github username]/jukebox.git
 cd jukebox  
 
-# Windows Desktop Environment Setup
-## Conda Install
+# Conda Install
+## Colab Environment
+Python:  
+!pip install -q condacolab  
+import condacolab  
+condacolab.install()  
+- Restart the session  
+- Verify installation:  
+Python  
+!conda --version
+## Windows Desktop Environment
 Install the conda package manager from https://docs.conda.io/en/latest/miniconda.html    
 
-## Conda Activation
-### Initialize after installation in a system command prompt
+### Conda Activation
+#### Initialize after installation in a system command prompt
 C:\Users\<YourUsername>>C:\Users\<YourUsername>\Miniconda3\Scripts\conda.exe init cmd.exe  
 Close the command prompt
 #### Verfication
@@ -64,15 +73,13 @@ Re-open the command prompt and enter:
 C:\Users\<YourUsername>>conda --version
 C:\Users\<YourUsername>>conda init powershell
 
-# Conda Environment Setup
-## At IDE Powershell Command Prompt
+### Conda Environment Creation
 conda create --name jukebox python=3.12.12  
 
-# Conda Environment Activation
-## At IDE Powershell Command Prompt
+### Conda Environment Activation
 conda activate jukebox 
 
-## If Desktop VS Code IDE - Set the Correct Python Interpreter
+### Set the Correct Python Interpreter
 To make sure VS Code uses the jukebox environment for all Python operations:  
 - Press Ctrl + Shift + P → type “Python: Select Interpreter”  
 - Choose the one that looks like:  
