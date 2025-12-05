@@ -73,6 +73,10 @@ Re-open the command prompt and enter:
 C:\Users\<YourUsername>>conda --version
 C:\Users\<YourUsername>>conda init powershell
 
+### Remove Conda Environment (to recreate it)
+conda deactivate jukebox
+conda remove --name jukebox --all  
+
 ### Conda Environment Creation
 conda create --name jukebox python=3.12.12  
 
@@ -91,10 +95,10 @@ To make sure VS Code uses the jukebox environment for all Python operations:
 conda install mpi4py=4.0.3  
 ### cuda and torch
 #### Windows Desktop Environment
-conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidiay 
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia 
 #### Colab environment
-conda install cuda-cudart cuda-version=12
-conda install pytorch torchvision torchaudio
+conda install cuda-cudart cuda-version=12.1 -c conda-forge
+conda install pytorch torchvision torchaudio -c conda-forge
 ### In requirements.txt
 pip install -r requirements.txt  
 pip install -e .  
