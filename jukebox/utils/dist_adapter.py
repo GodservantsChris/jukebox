@@ -109,7 +109,7 @@ def _init_process_group(backend, init_method):
         if backend and init_method:
             emsgOperation = f"determining if the distributed service is available"
             if is_available:
-                emsgOperation = f"determining if the backend is available"
+                emsgOperation = f"determining if the backend is available; backend "
                 isBackendAvailable = False
                 if backend == "gloo": 
                     isBackendAvailable = dist.is_gloo_available()
@@ -119,7 +119,7 @@ def _init_process_group(backend, init_method):
                     emsgOperation = f"initializing distributed services"
                     res = dist.init_process_group(backend, init_method)
                     return res
-                else: raise NameError
+                else: raise NameError(f"Backend (" + backend + ") is not available.")
             else: raise NameError
         else: raise NameError
     except NameError as e:
