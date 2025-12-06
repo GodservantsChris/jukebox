@@ -50,11 +50,17 @@ For Desktop VS Code IDE the installed files (conda or pip installs) are located 
 - Connect to a Hosted Runtime that is type T4 GPU
 ## Windows Desktop
 - Use a computer that has NVIDIA GPU Processor
+
 # Clone the jukebox repository
 git clone -b [branchName] https://[URLtoRepositoryWithJukeboxCode]  [on desktop - indicate a project name] 
 For example:  
 !git clone -b Jukebox-Python_3_12 https://github.com/[github username]/jukebox.git jukebox-python-3-12
 cd jukebox  
+
+# Mount Google Drive in Colab
+from google.colab import drive  
+drive.mount('/content/drive')  
+- Mounted at /content/drive
 
 # Conda Install
 ## Colab Environment
