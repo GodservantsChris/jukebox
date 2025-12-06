@@ -71,46 +71,86 @@ def restore_opt(opt, shd, checkpoint_path):
         shd.step(checkpoint['step'])
 
 def make_vqvae(hps, device='cuda'):
-    from jukebox.vqvae.vqvae import VQVAE
-    block_kwargs = dict(width=hps.width, depth=hps.depth, m_conv=hps.m_conv,
-                        dilation_growth_rate=hps.dilation_growth_rate,
-                        dilation_cycle=hps.dilation_cycle,
-                        reverse_decoder_dilation=hps.vqvae_reverse_decoder_dilation)
+    vqvae = None    
+    emsgContext = f"make_models.make_vqvae(hps, device=cuda)"
+    emsgOperation = f""
+    try:        
+        emsgOperation = f"validating hps"
+        if hps:
+            emsgOperation = f"importing VQVAE from jukebox.vqvae.vqvae"
+            from jukebox.vqvae.vqvae import VQVAE
+            emsgOperation = f"creating the block_kwargs"
+            block_kwargs = dict(width=hps.width, depth=hps.depth, m_conv=hps.m_conv,
+                                dilation_growth_rate=hps.dilation_growth_rate,
+                                dilation_cycle=hps.dilation_cycle,
+                                reverse_decoder_dilation=hps.vqvae_reverse_decoder_dilation)
+            emsgOperation = f"validating hps.sample_length is empty"
+            if not hps.sample_length:
+                emsgOperation = f"asserting that hps.sample_length_in_seconds != 0"
+                assert hps.sample_length_in_seconds != 0
+                emsgOperation = f"calculating strides"
+                downsamples = calculate_strides(hps.strides_t, hps.downs_t)
+                emsgOperation = f"getting top_raw_to_tokens using downsamples"
+                top_raw_to_tokens = np.prod(downsamples)
+                emsgOperation = f"validating top_raw_to_tokens"
+                if top_raw_to_tokens and top_raw_to_tokens > 0:
+                    emsgOperation = f"calculating hps.sample_length"
+                    hps.sample_length = (hps.sample_length_in_seconds * hps.sr // top_raw_to_tokens) * top_raw_to_tokens
+                    print(f"Setting sample length to {hps.sample_length} (i.e. {hps.sample_length/hps.sr} seconds) to be multiple of {top_raw_to_tokens}")
+                    emsgOperation = f"creating a VQVAE object"            
+                    vqvae = VQVAE(input_shape=(hps.sample_length,1), levels=hps.levels, downs_t=hps.downs_t, strides_t=hps.strides_t,
+                                emb_width=hps.emb_width, l_bins=hps.l_bins,
+                                mu=hps.l_mu, commit=hps.commit,
+                                spectral=hps.spectral, multispectral=hps.multispectral,
+                                multipliers=hps.hvqvae_multipliers, use_bottleneck=hps.use_bottleneck,
+                                **block_kwargs)
 
-    if not hps.sample_length:
-        assert hps.sample_length_in_seconds != 0
-        downsamples = calculate_strides(hps.strides_t, hps.downs_t)
-        top_raw_to_tokens = np.prod(downsamples)
-        hps.sample_length = (hps.sample_length_in_seconds * hps.sr // top_raw_to_tokens) * top_raw_to_tokens
-        print(f"Setting sample length to {hps.sample_length} (i.e. {hps.sample_length/hps.sr} seconds) to be multiple of {top_raw_to_tokens}")
-    try:
-
-        vqvae = VQVAE(input_shape=(hps.sample_length,1), levels=hps.levels, downs_t=hps.downs_t, strides_t=hps.strides_t,
-                    emb_width=hps.emb_width, l_bins=hps.l_bins,
-                    mu=hps.l_mu, commit=hps.commit,
-                    spectral=hps.spectral, multispectral=hps.multispectral,
-                    multipliers=hps.hvqvae_multipliers, use_bottleneck=hps.use_bottleneck,
-                    **block_kwargs)
-
-        vqvae = vqvae.to(device)
-        restore_model(hps, vqvae, hps.restore_vqvae)
-        if hps.train and not hps.prior:
-            print_all(f"Loading vqvae in train mode")
-            if hps.restore_vqvae != '':
-                print_all("Reseting bottleneck emas")
-                for level, bottleneck in enumerate(vqvae.bottleneck.level_blocks):
-                    num_samples = hps.sample_length
-                    downsamples = calculate_strides(hps.strides_t, hps.downs_t)
-                    raw_to_tokens = np.prod(downsamples[:level + 1])
-                    num_tokens = (num_samples // raw_to_tokens) * dist.get_world_size()
-                    bottleneck.restore_k(num_tokens=num_tokens, threshold=hps.revival_threshold)
-        else:
-            print_all(f"Loading vqvae in eval mode")
-            vqvae.eval()
-            freeze_model(vqvae)
+                    emsgOperation = f"setting vqvae to device: " + str(device)
+                    vqvae = vqvae.to(device)
+                    emsgOperation = f"restoring model"
+                    restore_model(hps, vqvae, hps.restore_vqvae)
+                    emsgOperation = f"checking hps.train and not hps.prior"
+                    if hps.train and not hps.prior:
+                        print_all(f"Loading vqvae in train mode")
+                        emsgOperation = f"validating hps.restore_vqae"
+                        if hps.restore_vqvae != '':
+                            print_all("Reseting bottleneck emas")
+                            emsgLoop = f"iterating over vqvae.bottleneck.level_blocks"
+                            for level, bottleneck in enumerate(vqvae.bottleneck.level_blocks):
+                                emsgLevel = f"; level: " + str(level)
+                                emsgOperation = emsgLoop + emsgLevel + f"; getting sample_length from hps"
+                                num_samples = hps.sample_length
+                                emsgOperation = emsgLoop + emsgLevel + f"; calculating strides using hps"
+                                downsamples = calculate_strides(hps.strides_t, hps.downs_t)
+                                emsgOperation = emsgLoop + emsgLevel + f"; getting raw_to_tokens"
+                                raw_to_tokens = np.prod(downsamples[:level + 1])
+                                emsgOperation = emsgLoop + emsgLevel + f"; validating raw_to_tokens"
+                                if raw_to_tokens and raw_to_tokens > 0:
+                                    emsgOperation = emsgLoop + emsgLevel + f"calculating num_tokens"                                
+                                    num_tokens = (num_samples // raw_to_tokens) * dist.get_world_size()
+                                    emsgOperation = emsgLoop + emsgLevel + f"; restoring k using bottleneck"
+                                    bottleneck.restore_k(num_tokens=num_tokens, threshold=hps.revival_threshold)
+                                else:
+                                    raise NameError
+                    else:
+                        print_all(f"Loading vqvae in eval mode")
+                        emsgOperation = f"callinging vqvae.eval()"
+                        vqvae.eval()
+                        emsgOperation = f"freezing vqvae"
+                        freeze_model(vqvae)                
+                    return vqvae
+                else: raise NameError
+            else: raise NameError
+        else: raise NameError
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
     except AssertionError as e:
-        print(f"CJM1: " + repr(e))
-    return vqvae
+        emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+    except Exception as e:
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
 
 def make_prior(hps, vqvae, device='cuda'):
     from jukebox.prior.prior import SimplePrior
@@ -190,13 +230,32 @@ def make_prior(hps, vqvae, device='cuda'):
     return prior
 
 def make_model(model, device, hps, levels=None):
-    vqvae, *priors = MODELS[model]
-    vqvae = make_vqvae(setup_hparams(vqvae, dict(sample_length=hps.get('sample_length', 0), sample_length_in_seconds=hps.get('sample_length_in_seconds', 0))), device)
-    hps.sample_length = vqvae.sample_length
-    if levels is None:
-        levels = range(len(priors))
-    priors = [make_prior(setup_hparams(priors[level], dict()), vqvae, 'cpu') for level in levels]
-    return vqvae, priors
+    emsgContext = f"make_models.make_model(model, device, hps, levels=None)"
+    emsgOperation = f""
+    try:        
+        emsgOperation = f"validating model"
+        if model:
+            emsgOperation = f"getting vqvae and priors from MODELS collection for model: " + str(model)            
+            vqvae, *priors = MODELS[model]
+            emsgOperation = f"makiing vqvae object"            
+            vqvae = make_vqvae(setup_hparams(vqvae, dict(sample_length=hps.get('sample_length', 0), sample_length_in_seconds=hps.get('sample_length_in_seconds', 0))), device)
+            emsgOperation = f"setting hps.sample_length from vqvae.sample_length"            
+            hps.sample_length = vqvae.sample_length
+            emsgOperation = f"checking if levels is set"            
+            if levels is None:
+                emsgOperation = f"setting levels"            
+                levels = range(len(priors))
+            emsgOperation = f"making priors"            
+            priors = [make_prior(setup_hparams(priors[level], dict()), vqvae, 'cpu') for level in levels]
+            emsgOperation = f"returning with vqvae and priors"            
+            return vqvae, priors
+        else: raise NameError
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+    except Exception as e:
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
 
 def save_outputs(model, device, hps):
     # Check logits

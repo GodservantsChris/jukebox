@@ -46,9 +46,9 @@ When sampling using jukebox, use the full path in the --name parameter to contro
 For Desktop VS Code IDE the installed files (conda or pip installs) are located at C:\Users\<YourUsername>\miniconda3\envs\jukebox\Lib\site-packages  
 
 # Clone the jukebox repository
-git clone https://[URLtorepositorywithjukeboxcode]  
+git clone -b [branchName] https://[URLtoRepositoryWithJukeboxCode]  [on desktop - indicate a project name] 
 For example:  
-!git clone -b Jukebox-Python_3_12 https://github.com/[github username]/jukebox.git
+!git clone -b Jukebox-Python_3_12 https://github.com/[github username]/jukebox.git jukebox-python-3-12
 cd jukebox  
 
 # Conda Install
