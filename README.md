@@ -94,12 +94,8 @@ To make sure VS Code uses the jukebox environment for all Python operations:
 ### mpi4py
 conda install mpi4py=4.0.3  
 ### cuda and torch
-#### Windows Desktop Environment
 conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia 
-#### Colab environment
-conda install cuda-cudart cuda-version=12.1 -c conda-forge
-conda install pytorch torchvision torchaudio -c conda-forge
-### In requirements.txt
+### requirements.txt and jukebox
 pip install -r requirements.txt  
 pip install -e .  
 
@@ -122,7 +118,7 @@ In PowerShell command, run the Downloaks.ps1 script (or run each loop in the com
 # Sampling
 To sample normally, run the following command. Model can be `5b`, `5b_lyrics`, `1b_lyrics`
 ## Sampling from scratch
-### For gloo backend (Desktop environment)
+### For gloo backend (Desktop and Colab environments where only a single CPU is available)
 ``` 
 python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=sample_1b --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
 ```
