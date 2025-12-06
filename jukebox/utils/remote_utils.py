@@ -37,7 +37,7 @@ def gs_upload(local_path, gs_path, async_upload=False):
 def ls(regex):
     outputs = subprocess.check_output(['gsutil', 'ls', regex]).decode(sys.stdout.encoding)
     outputs = outputs.split('\n')
-    outputs = [output for output in outputs if output not in '']
+    outputs = [output for output in outputs if output is not '']
     print(f"in remote_utils.ls(regex); outputs = " + str(outputs))
     return outputs
 
