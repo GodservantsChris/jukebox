@@ -45,6 +45,11 @@ When sampling using jukebox, use the full path in the --name parameter to contro
 ## Windows Desktop
 For Desktop VS Code IDE the installed files (conda or pip installs) are located at C:\Users\<YourUsername>\miniconda3\envs\jukebox\Lib\site-packages  
 
+# Run using GPU
+## Colab Environment
+- Connect to a Hosted Runtime that is type T4 GPU
+## Windows Desktop
+- Use a computer that has NVIDIA GPU Processor
 # Clone the jukebox repository
 git clone -b [branchName] https://[URLtoRepositoryWithJukeboxCode]  [on desktop - indicate a project name] 
 For example:  
