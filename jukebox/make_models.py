@@ -72,7 +72,7 @@ def restore_opt(opt, shd, checkpoint_path):
 
 def make_vqvae(hps, device='cuda'):
     vqvae = None    
-    emsgContext = f"make_models.make_vqvae(hps, device=cuda)"
+    emsgContext = f"make_models.make_vqvae(hps, device=" + device + f")"
     emsgOperation = f""
     try:        
         emsgOperation = f"validating hps"
