@@ -31,6 +31,7 @@ def load_checkpoint(path):
             if not os.path.exists(os.path.dirname(local_path)):
                 os.makedirs(os.path.dirname(local_path))
             if not os.path.exists(local_path):
+                print("Downloading from azure to local_path: " + str(local_path))
                 download(remote_path, local_path)
         restore = local_path
     dist.barrier()
