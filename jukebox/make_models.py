@@ -38,8 +38,11 @@ def load_checkpoint(path):
     print(f"calling dist.barrier()")
     dist.barrier()
     print(f"loading from restore: " + str(restore))
-    checkpoint = t.load(restore, map_location=t.device('cpu'))
-    print("Restored from {}".format(restore))
+    try:
+        checkpoint = t.load(restore, map_location=t.device('cpu'))
+        print("Restored from {}".format(restore))
+    except Exception as e:
+        print(f"Exception in make_models.load_checkpoint while loading from restore: " + repr(e))
     return checkpoint
 
 def save_checkpoint(logger, name, model, opt, metrics, hps):
