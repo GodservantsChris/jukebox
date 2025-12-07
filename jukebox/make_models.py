@@ -33,8 +33,11 @@ def load_checkpoint(path):
             if not os.path.exists(local_path):
                 print("Downloading from azure to local_path: " + str(local_path))
                 download(remote_path, local_path)
+        print(f"setting restore to local path")
         restore = local_path
+    print(f"calling dist.barrier()")
     dist.barrier()
+    print(f"loading from restore: " + str(restore))
     checkpoint = t.load(restore, map_location=t.device('cpu'))
     print("Restored from {}".format(restore))
     return checkpoint
