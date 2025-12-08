@@ -22,28 +22,49 @@ MODELS = {
 }
 
 def load_checkpoint(path):
-    restore = path
-    if restore.startswith(REMOTE_PREFIX):
-        remote_path = restore
-        local_path = os.path.join(os.path.expanduser("~/.cache"), remote_path[len(REMOTE_PREFIX):])
-        if dist.get_rank() % 8 == 0:
-            print("Downloading from azure")
-            if not os.path.exists(os.path.dirname(local_path)):
-                os.makedirs(os.path.dirname(local_path))
-            if not os.path.exists(local_path):
-                print("Downloading from azure to local_path: " + str(local_path))
-                download(remote_path, local_path)
-        print(f"setting restore to local path")
-        restore = local_path
-    print(f"calling dist.barrier()")
-    dist.barrier()
-    print(f"loading from restore: " + str(restore))
-    try:
-        checkpoint = t.load(restore, map_location=t.device('cpu'))
-        print("Restored from {}".format(restore))
+    checkpoint = None
+    emsgContext = f"make_models.load_checkpoint(path)"
+    emsgOperation = f""
+    try:        
+        emsgOperation = f"validating path"
+        if path:
+            restore = path
+            emsgOperation = f"determining if restore starts with " + str(REMOTE_PREFIX)
+            if restore.startswith(REMOTE_PREFIX):
+                remote_path = restore
+                emsgOperation = f"creating local_path"
+                local_path = os.path.join(os.path.expanduser("~/.cache"), remote_path[len(REMOTE_PREFIX):])
+                emsgOperation = f"determining if the rank is a multiple of 8"
+                if dist.get_rank() % 8 == 0:
+                    emsgOperation = f"determining the local directory"
+                    local_dir = os.path.dirname(local_path)
+                    emsgOperation = f"checking for existence of " + str(local_dir)
+                    if not os.path.exists(local_dir):
+                        emsgOperation = f"creating " + str(local_dir)
+                        os.makedirs(local_dir)
+                    print("The rank is a multiple of 8 - check for existence of the local path: " + str(local_path))
+                    emsgOperation = f"checking for existence of " + str(local_path)
+                    if not os.path.exists(local_path):
+                        print("The local path does not exist.  Downloading to local_path: " + str(local_path))
+                        emsgOperation = f"downloading to local_path: " + str(local_path)
+                        download(remote_path, local_path)
+                emsgOperation = f"setting restore to " + str(local_path)
+                restore = local_path
+            emsgOperation = f"calling dist.barrier()"
+            dist.barrier()
+            print(f"loading from restore: " + str(restore))
+            emsgOperation = f"loading from restore: " + str(restore)
+            checkpoint = t.load(restore, map_location=t.device('cpu'))
+            print("Restored from {}".format(restore))
+            emsgOperation = f"returning checkpoint"
+            return checkpoint
+        else: raise NameError
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
     except Exception as e:
-        print(f"Exception in make_models.load_checkpoint while loading from restore: " + repr(e))
-    return checkpoint
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
 
 def save_checkpoint(logger, name, model, opt, metrics, hps):
     with t.no_grad():
