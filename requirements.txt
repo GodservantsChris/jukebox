@@ -1,6 +1,5 @@
-fire==0.7.1
-tqdm==4.67.1
-soundfile==0.13.1
-unidecode==1.4.0
-numba==0.62.1
-librosa==0.11.0
+fire
+soundfile
+unidecode
+numba
+librosa

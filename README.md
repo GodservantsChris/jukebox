@@ -102,13 +102,19 @@ To make sure VS Code uses the jukebox environment for all Python operations:
 
 # Install required modules
 ## For Sampling
-### mpi4py
-conda install mpi4py=4.0.3  
 ### cuda and torch
-conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia 
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
 ### requirements.txt and jukebox
 pip install -r requirements.txt  
 pip install -e .  
+
+### For Desktop - Need tqdm and mpi
+pip install tqdm
+pip install mpi4py
+
+### For MPI support, if desired
+conda install mpi4py  
 
 ## For Training
 conda install av==14.2.0 -c conda-forge  
@@ -116,6 +122,9 @@ pip install ./tensorboardX
  
 ## Optional: Apex for faster training with fused_adam
 pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./apex
+
+## Verification
+conda list
 
 # Models
 ## Colab Environment
