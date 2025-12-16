@@ -109,12 +109,8 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 pip install -r requirements.txt  
 pip install -e .  
 
-### For Desktop - Need tqdm and mpi
+### For Desktop - Need tqdm
 pip install tqdm
-pip install mpi4py
-
-### For MPI support, if desired
-conda install mpi4py  
 
 ## For Training
 conda install av==14.2.0 -c conda-forge  
