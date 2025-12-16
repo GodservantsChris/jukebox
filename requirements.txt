@@ -3,3 +3,4 @@ soundfile
 unidecode
 numba
 librosa
+mpi4py
