@@ -13,12 +13,14 @@ Forked from Openai/jukebox.git by GodservantsChris on 2025_11_06 for porting Juk
 # File locations
 ## Colab IDE
 Files and folders you create or clone (like the Jukebox repo) live in /content/, which is part of a remote server provided by Colab.
-- This environment is ephemeral — meaning it resets when the session ends or times out. Any unsaved files will be lost.  
+- This environment is ephemeral — meaning it resets when the session ends or times out. Any unsaved files will be lost.
+!ls -la /content/jukebox 
 
-Installed files are located at:  
+### Installed files are located at:  
 !ls -la /usr/local/lib/python3.12/dist-packages/
 
-If you mount your Google Drive, you can manually navigate to:  
+### If you mount your Google Drive
+you can manually navigate to:  
 cd /content/drive/MyDrive/  
 and save files there.  
 For example, save output files to an output directory:  
@@ -27,27 +29,58 @@ import os
 output_dir = '/content/drive/MyDrive/jukebox_outputs'  
 os.makedirs(output_dir, exist_ok=True)  
 
-When your script generates a .wav or .pth.tar file, copy it to your Drive folder:  
+### When your script generates a .wav or .pth.tar file  
+#### Download it
+from google.colab import files  
+files.download('/content/jukebox_outputs/sample_1b/level_2/item_0.wav')   
+##### If copied to persistent storage (see below)
+files.download('/home/jupyter/jukebox_outputs/sample_1b/level_2/item_0.wav')  
+
+
+#### Copy it to your Drive folder  
 Python:  
 !cp /content/jukebox/samples/sample.wav output_dir  
+#### Copy it to persistent storage in your runtime (Google Colab Enterprise)  
+import shutil
+import os
 
-When sampling using jukebox, use the full path in the --name parameter to control where outputs go:
+'# Source file or directory (ephemeral)  
+src = "/content/jukebox_outputs/sample_1b/level_2"# or a file like"/content/myfile.txt"  
+  
+'# Destination inside persistent storage  
+dst = "/home/jupyter/jukebox_outputs/sample_1b/level_2" # or "/home/jupyter/myfile.txt"  
+  
+' # Create destination directory if needed  
+os.makedirs(os.path.dirname(dst), exist_ok=True)  
+  
+' # Copy file or directory  
+if os.path.isdir(src):  
+    shutil.copytree(src, dst, dirs_exist_ok=True)  
+else:  
+    shutil.copy2(src, dst)  
+  
+print("Copied to persistent storage:", dst)  
+
+### When sampling using jukebox
+use the full path in the --name parameter to control where outputs go:  
 !python jukebox/sample.py \
   --model=1b_lyrics \
-  --name=/content/drive/MyDrive/jukebox_outputs/somesubfoldername \
+  --name=/content/jukebox_outputs/somesubfoldername \
   --levels=3 \
   --sample_length_in_seconds=20 \
   --total_sample_length_in_seconds=60 \
   --sr=44100 \
   --n_samples=1 \
   --hop_fraction=0.5,0.5,0.125
+  #### Verification
+  !ls -R /content/jukebox_outputs  
 
 ## Windows Desktop
 For Desktop VS Code IDE the installed files (conda or pip installs) are located at C:\Users\<YourUsername>\miniconda3\envs\jukebox\Lib\site-packages  
 
 # Run using GPU
 ## Colab Environment
-- Connect to a Hosted Runtime that is type T4 GPU
+- Connect to a Hosted Runtime that is type L4 GPU
 ## Windows Desktop
 - Use a computer that has NVIDIA GPU Processor
 
@@ -56,14 +89,32 @@ git clone -b [branchName] https://[URLtoRepositoryWithJukeboxCode]  [on desktop 
 For example:  
 !git clone -b Jukebox-Python_3_12 https://github.com/[github username]/jukebox.git jukebox-python-3-12
 cd jukebox  
+## Update from the jukebox respository (Colab Environment)
+%cd /content/jukebox  
+!git pull origin Jukebox-Python_3_12  
 
-# Mount Google Drive in Colab
+# Mount Google Drive in Colab 
+google.colab.drive.mount is not supported in Colab Enterprise.  
 from google.colab import drive  
 drive.mount('/content/drive')  
-- Mounted at /content/drive
+- Mounted at /content/drive   
+## Colab Enterprise
+%cd /content/jukebox  
+import os  
+  
+directory_name = "jukebox_outputs"  
+  
+try:  
+    os.mkdir(directory_name)  
+    print(f"Directory '{directory_name}' created.")  
+except FileExistsError:  
+    print(f"Directory '{directory_name}' already exists.")  
+except FileNotFoundError:  
+    print(f"Parent directory does not exist.")  
 
 # Conda Install
-## Colab Environment
+## Colab Environment - Not needed and interferes with the installed version of torch
+But, if desired:  
 Python:  
 !pip install -q condacolab  
 import condacolab  
@@ -102,8 +153,27 @@ To make sure VS Code uses the jukebox environment for all Python operations:
 
 # Install required modules
 ## For Sampling
-### cuda and torch
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+### cuda and torch - Not needed since already installed in Colab Enterprise
+But, if desired:  
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121  
+### Verification
+import torch  
+print("CUDA available:", torch.cuda.is_available())  
+print("PyTorch CUDA version:", torch.version.cuda)  
+if torch.cuda.is_available():  
+    print("GPU:", torch.cuda.get_device_name(0))  
+    print("GPU count:", torch.cuda.device_count())  
+    - If this prints 2, use backend = NCCL  
+    - If it prints 1, use backend = Gloo  
+    - If it prints 0, you’re on CPU and must use Gloo  
+
+
+  
+Expected:  
+CUDA available: True  
+PyTorch CUDA version: 12.6  
+GPU: NVIDIA L4
+GPU count: 1
 
 ### requirements.txt and jukebox
 pip install -r requirements.txt  
@@ -119,7 +189,7 @@ pip install ./tensorboardX
 ## Optional: Apex for faster training with fused_adam
 pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./apex
 
-## Verification
+## Verification when using conda (Windows Desktop)
 conda list
 
 # Models
@@ -134,12 +204,12 @@ In PowerShell command, run the Downloaks.ps1 script (or run each loop in the com
 # Sampling
 To sample normally, run the following command. Model can be `5b`, `5b_lyrics`, `1b_lyrics`
 ## Sampling from scratch
-### For gloo backend (Desktop and Colab environments where only a single CPU is available)
+### For gloo backend (single CPU or GPU)
 ``` 
-python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=sample_1b --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
+python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
 ```
-### For nccl backend (Colab environment)
-python jukebox/sample.py --model=1b_lyrics --backend_to_run=nccl --name=/content/drive/MyDrive/jukebox_outputs/sample_1b --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
+### For nccl backend (>1 GPUS)
+python jukebox/sample.py --model=1b_lyrics --backend_to_run=nccl --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
 ``` 
 The above generates the first `sample_length_in_seconds` seconds of audio from a song of total length `total_sample_length_in_seconds`.
 To use multiple GPU's, launch the above scripts as `mpiexec -n {ngpus} python jukebox/sample.py ...` so they use `{ngpus}`
