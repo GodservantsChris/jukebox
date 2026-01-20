@@ -222,6 +222,11 @@ A summary of all sampling data including zs, x, labels and sampling_kwargs is st
 
 The hps are for a V100 GPU with 16 GB GPU memory.  
 
+Common Sample Rates (sr) & Their Uses:  
+44.1 kHz (44,100 Hz): The standard for audio CDs and MP3s, covering the range of human hearing (up to 22.05 kHz).  
+48 kHz (48,000 Hz): The standard for video, film, and most digital audio workstations (DAWs), offering a slight buffer for video syncing and processing.  
+96 kHz & 192 kHz: Used in high-resolution audio production for capturing more detail, offering more flexibility for effects like time-stretching, and for professional mastering.  
+
 The `1b_lyrics`, `5b`, and `5b_lyrics` top-level priors take up 
 3.8 GB, 10.3 GB, and 11.5 GB, respectively. The peak memory usage to store transformer key, value cache is about 400 MB for `1b_lyrics` and 1 GB for `5b_lyrics` per sample.  
 
