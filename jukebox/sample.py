@@ -175,7 +175,7 @@ def load_codes(codes_file, duration, priors, hps):
     return zs
 
 # Generate and save samples, alignment, and webpage for visualization.
-def save_samples(model, device, hps, sample_hps, max_batch_size = 3):
+def save_samples(model, device, hps, sample_hps, max_batch_size = 16):
     emsgContext = f"sample.save_samples(model, device, hps, sample_hps, max_batch_size = 3)"
     emsgOperation = f""
     try:        
@@ -305,7 +305,7 @@ def save_samples(model, device, hps, sample_hps, max_batch_size = 3):
         emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
         raise Exception(emsg)
 
-def run(model, backend_to_run='nccl', mode='ancestral', max_batch_size = 3, codes_file=None, audio_file=None, prompt_length_in_seconds=None, **kwargs):
+def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, **kwargs):
     from jukebox.utils.dist_utils import setup_dist_from_mpi
     emsgContext = f"sample.run()"
     emsgOperation = f""
@@ -326,7 +326,7 @@ def run(model, backend_to_run='nccl', mode='ancestral', max_batch_size = 3, code
                 emsgOperation = f"determining if torch gradient calculations are disabled"
                 with t.no_grad():
                     emsgOperation = f"saving samples when torch gradient calculations are disabled"
-                    save_samples(model, device, hps, sample_hps, max_batch_size)
+                    save_samples(model, device, hps, sample_hps)
             else: raise NameError
         else: raise NameError
     except NameError as e:
