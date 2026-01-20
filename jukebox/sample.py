@@ -175,8 +175,8 @@ def load_codes(codes_file, duration, priors, hps):
     return zs
 
 # Generate and save samples, alignment, and webpage for visualization.
-def save_samples(model, device, hps, sample_hps):
-    emsgContext = f"sample.save_samples(model, device, hps, sample_hps)"
+def save_samples(model, device, hps, sample_hps, max_batch_size = 3):
+    emsgContext = f"sample.save_samples(model, device, hps, sample_hps, max_batch_size = 3)"
     emsgOperation = f""
     try:        
         emsgOperation = f"validating model"
@@ -245,10 +245,8 @@ def save_samples(model, device, hps, sample_hps):
             lower_level_max_batch_size = 16
             if model == '1b_lyrics':
                 chunk_size = 32
-                max_batch_size = 16
             else:
-                chunk_size = 16
-                max_batch_size = 3
+                chunk_size = 16                
             emsgOperation = f"setting sample_kwargs"
             sampling_kwargs = [dict(temp=0.99, fp16=True, chunk_size=lower_level_chunk_size, max_batch_size=lower_level_max_batch_size),
                             dict(temp=0.99, fp16=True, chunk_size=lower_level_chunk_size, max_batch_size=lower_level_max_batch_size),
@@ -307,7 +305,7 @@ def save_samples(model, device, hps, sample_hps):
         emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
         raise Exception(emsg)
 
-def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, **kwargs):
+def run(model, backend_to_run='nccl', mode='ancestral', max_batch_size = 3, codes_file=None, audio_file=None, prompt_length_in_seconds=None, **kwargs):
     from jukebox.utils.dist_utils import setup_dist_from_mpi
     emsgContext = f"sample.run()"
     emsgOperation = f""
@@ -328,7 +326,7 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
                 emsgOperation = f"determining if torch gradient calculations are disabled"
                 with t.no_grad():
                     emsgOperation = f"saving samples when torch gradient calculations are disabled"
-                    save_samples(model, device, hps, sample_hps)
+                    save_samples(model, device, hps, sample_hps, max_batch_size)
             else: raise NameError
         else: raise NameError
     except NameError as e:

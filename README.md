@@ -206,11 +206,12 @@ To sample normally, run the following command. Model can be `5b`, `5b_lyrics`, `
 ## Sampling from scratch
 ### For gloo backend (single CPU or GPU)
 ``` 
-python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
+python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --max_batch_size = 16 --hop_fraction=0.5,0.5,0.125
 ```
 ### For nccl backend (>1 GPUS)
-python jukebox/sample.py --model=1b_lyrics --backend_to_run=nccl --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125
-``` 
+```
+python jukebox/sample.py --model=1b_lyrics --backend_to_run=nccl --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=16 --hop_fraction=0.5,0.5,0.125  
+```
 The above generates the first `sample_length_in_seconds` seconds of audio from a song of total length `total_sample_length_in_seconds`.
 To use multiple GPU's, launch the above scripts as `mpiexec -n {ngpus} python jukebox/sample.py ...` so they use `{ngpus}`
 
@@ -219,12 +220,17 @@ You can also view the samples as an html with the aligned lyrics under `{name}/l
 Run `python -m http.server` and open the html through the server to see the lyrics animate as the song plays.  
 A summary of all sampling data including zs, x, labels and sampling_kwargs is stored in `{name}/level_{level}/data.pth.tar`.
 
-The hps are for a V100 GPU with 16 GB GPU memory. The `1b_lyrics`, `5b`, and `5b_lyrics` top-level priors take up 
-3.8 GB, 10.3 GB, and 11.5 GB, respectively. The peak memory usage to store transformer key, value cache is about 400 MB 
-for `1b_lyrics` and 1 GB for `5b_lyrics` per sample. If you are having trouble with CUDA OOM issues, try `1b_lyrics` or 
+The hps are for a V100 GPU with 16 GB GPU memory.  
+
+The `1b_lyrics`, `5b`, and `5b_lyrics` top-level priors take up 
+3.8 GB, 10.3 GB, and 11.5 GB, respectively. The peak memory usage to store transformer key, value cache is about 400 MB for `1b_lyrics` and 1 GB for `5b_lyrics` per sample.  
+
+If you are having trouble with CUDA OOM issues, try `1b_lyrics` or 
 decrease `max_batch_size` in sample.py, and `--n_samples` in the script call.
 
-On a V100, it takes about 3 hrs to fully sample 20 seconds of music. Since this is a long time, it is recommended to use `n_samples > 1` so you can generate as many samples as possible in parallel. The 1B lyrics and upsamplers can process 16 samples at a time, while 5B can fit only up to 3. Since the vast majority of time is spent on upsampling, we recommend using a multiple of 3 less than 16 like `--n_samples 15` for `5b_lyrics`. This will make the top-level generate samples in groups of three while upsampling is done in one pass.
+On a V100, it takes about 3 hrs to fully sample 20 seconds of music. Since this is a long time, it is recommended to use `n_samples > 1` so you can generate as many samples as possible in parallel.  
+
+The 1B lyrics and upsamplers can process 16 samples at a time, while 5B can fit only up to 3. Since the vast majority of time is spent on upsampling, we recommend using a multiple of 3 less than 16 like `--n_samples 15` for `5b_lyrics`. This will make the top-level generate samples in groups of three while upsampling is done in one pass.
 
 To continue sampling from already generated codes for a longer duration, you can run
 ```
