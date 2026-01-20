@@ -181,7 +181,7 @@ def save_samples(model, device, hps, sample_hps, max_batch_size = 16):
     try:        
         emsgOperation = f"validating model"
         if model:
-            print(hps)
+            print(f"hps: ", hps)
             emsgOperation = f"importing from jukebox.lyricdict"
             from jukebox.lyricdict import poems, gpt_2_lyrics
             emsgOperation = f"making the model"
