@@ -175,79 +175,18 @@ def load_codes(codes_file, duration, priors, hps):
     return zs
 
 # Generate and save samples, alignment, and webpage for visualization.
-def save_samples(model, device, hps, sample_hps, max_batch_size = 16):
-    emsgContext = f"sample.save_samples(model, device, hps, sample_hps, max_batch_size = 3)"
+def save_samples(model, device, hps, sample_hps, metas):
+    max_batch_size = 16
+    emsgContext = f"sample.save_samples(model, device, hps, sample_hps)"
     emsgOperation = f""
     try:        
         emsgOperation = f"validating model"
         if model:
             print(f"hps: ", hps)
-            emsgOperation = f"importing from jukebox.lyricdict"
-            from jukebox.lyricdict import poems, gpt_2_lyrics
             emsgOperation = f"making the model"
             vqvae, priors = make_model(model, device, hps)
             emsgOperation = f"asserting that there is atleast one ctx in get_z_conds. Please choose a longer sample length"
             assert hps.sample_length//priors[-2].raw_to_tokens >= priors[-2].n_ctx, f"Upsampling needs atleast one ctx in get_z_conds. Please choose a longer sample length"
-            emsgOperation = f"setting total_length"
-            total_length = hps.total_sample_length_in_seconds * hps.sr
-            emsgOperation = f"setting offset"
-            offset = 0
-            emsgOperation = f"setting metas"
-            # Set artist/genre/lyrics for your samples here!
-            # We used different label sets in our models, but you can write the human friendly names here and we'll map them under the hood for each model.
-            # For the 5b/5b_lyrics model and the upsamplers, labeller will look up artist and genres in v2 set. (after lowercasing, removing non-alphanumerics and collapsing whitespaces to _).
-            # For the 1b_lyrics top level, labeller will look up artist and genres in v3 set (after lowercasing).
-            metas = [
-                    dict(artist="James Taylor",
-                        genre="Accoustic",
-                        lyrics=gpt_2_lyrics['purpose'],
-                        total_length=total_length,
-                        offset=offset,
-                        ),
-                    dict(artist="Ella Fitzgerald",
-                        genre="Jazz",
-                        lyrics=gpt_2_lyrics['purpose'],
-                        total_length=total_length,
-                        offset=offset,
-                        ),
-                    dict(artist="Céline Dion",
-                        genre="Pop",
-                        lyrics=gpt_2_lyrics['purpose'],
-                        total_length=total_length,
-                        offset=offset,
-                        ),
-                    ]
-            """ metas = [dict(artist = "Alan Jackson",
-                        genre = "Country",
-                        lyrics = poems['ozymandias'],
-                        total_length=total_length,
-                        offset=offset,
-                        ), 
-                    dict(artist="Joe Bonamassa",
-                        genre="Blues Rock",
-                        lyrics=gpt_2_lyrics['hottub'],
-                        total_length=total_length,
-                        offset=offset,
-                        ), 
-                    dict(artist="Frank Sinatra",
-                        genre="Classic Pop",
-                        lyrics=gpt_2_lyrics['alone'],
-                        total_length=total_length,
-                        offset=offset,
-                        ),
-                    dict(artist="Ella Fitzgerald",
-                        genre="Jazz",
-                        lyrics=gpt_2_lyrics['count'],
-                        total_length=total_length,
-                        offset=offset,
-                        ),
-                    dict(artist="Céline Dion",
-                        genre="Pop",
-                        lyrics=gpt_2_lyrics['darkness'],
-                        total_length=total_length,
-                        offset=offset,
-                        ),
-                    ] """
             emsgLoop = f"iterating hps.n_samples"
             while len(metas) < hps.n_samples:
                 emsgOperation = emsgLoop + f"; extending metas with itself"
@@ -342,11 +281,42 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
                 emsgOperation = f"creating Hyperparams from **kwargs (" + str(kwargs) + f")"
                 hps = Hyperparams(**kwargs)
                 emsgOperation = f"creating Hyperparams from input args" + f"; rank = " + str(rank)  + f"; local_rank = " + str(local_rank) + f"; device = "+ str(device) + f";"
-                sample_hps = Hyperparams(dict(mode=mode, codes_file=codes_file, audio_file=audio_file, prompt_length_in_seconds=prompt_length_in_seconds))
+                sample_hps = Hyperparams(dict(mode=mode, codes_file=codes_file, audio_file=audio_file, prompt_length_in_seconds=prompt_length_in_seconds))                
+                emsgOperation = f"setting total_length"
+                total_length = hps.total_sample_length_in_seconds * hps.sr
+                emsgOperation = f"setting offset"
+                offset = 0
+                emsgOperation = f"importing from jukebox.lyricdict"
+                from jukebox.lyricdict import poems, gpt_2_lyrics
+                emsgOperation = f"setting metas"
+                # Set artist/genre/lyrics for your samples here!
+                # We used different label sets in our models, but you can write the human friendly names here and we'll map them under the hood for each model.
+                # For the 5b/5b_lyrics model and the upsamplers, labeller will look up artist and genres in v2 set. (after lowercasing, removing non-alphanumerics and collapsing whitespaces to _).
+                # For the 1b_lyrics top level, labeller will look up artist and genres in v3 set (after lowercasing).
+                metas = [
+                        dict(artist="James Taylor",
+                            genre="Accoustic",
+                            lyrics=gpt_2_lyrics['purpose'],
+                            total_length=total_length,
+                            offset=offset,
+                            ),
+                        dict(artist="Ella Fitzgerald",
+                            genre="Jazz",
+                            lyrics=gpt_2_lyrics['purpose'],
+                            total_length=total_length,
+                            offset=offset,
+                            ),
+                        dict(artist="Céline Dion",
+                            genre="Pop",
+                            lyrics=gpt_2_lyrics['purpose'],
+                            total_length=total_length,
+                            offset=offset,
+                            ),
+                        ]
                 emsgOperation = f"determining if torch gradient calculations are disabled"
                 with t.no_grad():
                     emsgOperation = f"saving samples when torch gradient calculations are disabled"
-                    save_samples(model, device, hps, sample_hps)
+                    save_samples(model, device, hps, sample_hps, metas)
             else: raise NameError
         else: raise NameError
     except NameError as e:
