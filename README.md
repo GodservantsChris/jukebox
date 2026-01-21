@@ -206,7 +206,7 @@ To sample normally, run the following command. Model can be `5b`, `5b_lyrics`, `
 ## Sampling from scratch
 ### For gloo backend (single CPU or GPU)
 ``` 
-python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=3 --max_batch_size=16 --hop_fraction=0.5,0.5,0.125 --artist=james_taylor --genre=acoustic
+python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=3 --max_batch_size=16 --hop_fraction=0.5,0.5,0.125 --artist="James Taylor" --genre=acoustic
 ```
 ### For nccl backend (>1 GPUS)
 ```
