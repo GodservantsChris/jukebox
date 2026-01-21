@@ -52,7 +52,8 @@ def load_checkpoint(path):
                 restore = local_path
             emsgOperation = f"calling dist.barrier()"
             dist.barrier()
-            print(f"loading from restore: " + str(restore))
+            print(f"*****")
+            print(f"Loading from restore: " + str(restore))
             emsgOperation = f"loading from restore: " + str(restore)
             checkpoint = t.load(restore, map_location=t.device('cpu'))
             print("Restored from {}".format(restore))
