@@ -266,7 +266,6 @@ def save_samples(model, device, hps, sample_hps, metas):
 
 def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, **kwargs):
     #
-    arg_genre = "Acoustic"
     arg_lyrics = '''All dressed up to go dreaming
     Now don't tell me I'm wrong
     And what a night to go dreaming
@@ -302,7 +301,6 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
                 hps = Hyperparams(**kwargs)
                 emsgOperation = f"creating Hyperparams from input args" + f"; rank = " + str(rank)  + f"; local_rank = " + str(local_rank) + f"; device = "+ str(device) + f";"
                 sample_hps = Hyperparams(dict(mode=mode, codes_file=codes_file, audio_file=audio_file, prompt_length_in_seconds=prompt_length_in_seconds))  
-                print(f'hps.artist: ' + hps.artist)              
                 emsgOperation = f"setting total_length"
                 total_length = hps.total_sample_length_in_seconds * hps.sr
                 emsgOperation = f"setting offset"
@@ -315,7 +313,7 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
                 # For the 1b_lyrics top level, labeller will look up artist and genres in v3 set (after lowercasing).
                 metas = [
                         dict(artist=hps.artist,
-                            genre=arg_genre,
+                            genre=hps.genre,
                             lyrics=arg_lyrics,
                             total_length=total_length,
                             offset=offset,
