@@ -295,7 +295,7 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
                 # For the 1b_lyrics top level, labeller will look up artist and genres in v3 set (after lowercasing).
                 metas = [
                         dict(artist="James Taylor",
-                            genre="Accoustic",
+                            genre="Acoustic",
                             lyrics=gpt_2_lyrics['purpose'],
                             total_length=total_length,
                             offset=offset,
