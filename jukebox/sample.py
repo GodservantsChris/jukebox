@@ -268,7 +268,16 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
     from jukebox.utils.dist_utils import setup_dist_from_mpi
     emsgContext = f"sample.run()"
     emsgOperation = f""
-    try:        
+    try: 
+        from datetime import datetime
+        # Get the current date and time, format it (e.g., HH:MM:SS) and print it
+        now = datetime.now()
+        cur_time = now.strftime("%H:%M:%S") 
+        print(f'Started: ' + emsgContext + f'; Start time: ' + cur_time)
+        # Start the timing for elapsed time
+        import time
+        start_time = time.perf_counter()
+        #     
         emsgOperation = f"validating model input"
         if model:
             emsgOperation = f"setting up distributed devices and getting device from mpi"
@@ -324,7 +333,14 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
     except Exception as e:
         print(f'Exception while ' + emsgOperation + f' in ' + emsgContext + f': ' + repr(e))
     finally:
-        print(f'Completed: ' + emsgContext)
+        # Get the current date and time, format it (e.g., HH:MM:SS) and print it
+        now = datetime.now()
+        cur_time = now.strftime("%H:%M:%S") 
+        print(f'Completed: ' + emsgContext + f'; End time: ' + cur_time)
+        # Calculate and print the elapsed time
+        end_time = time.perf_counter()
+        elapsed_time = end_time - start_time
+        print(f"Elapsed time: {elapsed_time:.4f} seconds")
 
 if __name__ == '__main__':
     fire.Fire(run)
