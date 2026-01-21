@@ -265,6 +265,18 @@ def save_samples(model, device, hps, sample_hps, metas):
         raise Exception(emsg)
 
 def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, **kwargs):
+    #
+    arg_artist = "James Taylor"
+    arg_genre = "Acoustic"
+    arg_lyrics = '''All dressed up to go dreaming
+    Now don't tell me I'm wrong
+    And what a night to go dreaming
+    Mind, if I tag along?
+
+    If I say, I love you, I want you to know
+    It's not just because there's moonlight, although
+    Moonlight becomes you, moonlight becomes you so'''
+    #
     from jukebox.utils.dist_utils import setup_dist_from_mpi
     emsgContext = f"sample.run()"
     emsgOperation = f""
@@ -295,29 +307,16 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
                 total_length = hps.total_sample_length_in_seconds * hps.sr
                 emsgOperation = f"setting offset"
                 offset = 0
-                emsgOperation = f"importing from jukebox.lyricdict"
-                from jukebox.lyricdict import poems, gpt_2_lyrics
+                #
                 emsgOperation = f"setting metas"
                 # Set artist/genre/lyrics for your samples here!
                 # We used different label sets in our models, but you can write the human friendly names here and we'll map them under the hood for each model.
                 # For the 5b/5b_lyrics model and the upsamplers, labeller will look up artist and genres in v2 set. (after lowercasing, removing non-alphanumerics and collapsing whitespaces to _).
                 # For the 1b_lyrics top level, labeller will look up artist and genres in v3 set (after lowercasing).
                 metas = [
-                        dict(artist="James Taylor",
-                            genre="Acoustic",
-                            lyrics=gpt_2_lyrics['purpose'],
-                            total_length=total_length,
-                            offset=offset,
-                            ),
-                        dict(artist="Ella Fitzgerald",
-                            genre="Jazz",
-                            lyrics=gpt_2_lyrics['purpose'],
-                            total_length=total_length,
-                            offset=offset,
-                            ),
-                        dict(artist="Céline Dion",
-                            genre="Pop",
-                            lyrics=gpt_2_lyrics['purpose'],
+                        dict(artist=arg_artist,
+                            genre=arg_genre,
+                            lyrics=arg_lyrics,
                             total_length=total_length,
                             offset=offset,
                             ),
