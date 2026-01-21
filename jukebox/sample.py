@@ -266,6 +266,10 @@ def save_samples(model, device, hps, sample_hps, metas):
 
 def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, **kwargs):
     #
+    print(f'mode: ' + str(mode))
+    #
+    arg_artist = "James Taylor"
+    arg_genre = "Acoustic"
     arg_lyrics = '''All dressed up to go dreaming
     Now don't tell me I'm wrong
     And what a night to go dreaming
@@ -312,8 +316,8 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
                 # For the 5b/5b_lyrics model and the upsamplers, labeller will look up artist and genres in v2 set. (after lowercasing, removing non-alphanumerics and collapsing whitespaces to _).
                 # For the 1b_lyrics top level, labeller will look up artist and genres in v3 set (after lowercasing).
                 metas = [
-                        dict(artist=hps.artist,
-                            genre=hps.genre,
+                        dict(artist=arg_artist,
+                            genre=arg_genre,
                             lyrics=arg_lyrics,
                             total_length=total_length,
                             offset=offset,
