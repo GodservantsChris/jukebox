@@ -176,7 +176,6 @@ def load_codes(codes_file, duration, priors, hps):
 
 # Generate and save samples, alignment, and webpage for visualization.
 def save_samples(model, device, hps, sample_hps, metas):
-    max_batch_size = 16
     emsgContext = f"sample.save_samples(model, device, hps, sample_hps)"
     emsgOperation = f""
     try:        
@@ -209,7 +208,7 @@ def save_samples(model, device, hps, sample_hps, metas):
             emsgOperation = f"setting sample_kwargs"
             sampling_kwargs = [dict(temp=0.99, fp16=True, chunk_size=lower_level_chunk_size, max_batch_size=lower_level_max_batch_size),
                             dict(temp=0.99, fp16=True, chunk_size=lower_level_chunk_size, max_batch_size=lower_level_max_batch_size),
-                            dict(temp=0.99, fp16=True, chunk_size=chunk_size, max_batch_size=max_batch_size)]
+                            dict(temp=0.99, fp16=True, chunk_size=chunk_size, max_batch_size=hps.max_batch_size)]
             emsgOperation = f"determining which sample_hps mode is in play"
             if sample_hps.mode == 'ancestral':
                 emsgOperation = f"sampling for ancestral mode"

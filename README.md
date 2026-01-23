@@ -206,11 +206,11 @@ To sample normally, run the following command. Model can be `5b`, `5b_lyrics`, `
 ## Sampling from scratch
 ### For gloo backend (single CPU or GPU)
 ``` 
-python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=3 --max_batch_size=16 --hop_fraction=0.5,0.5,0.125 --artist="James Taylor" --genre=acoustic
+python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=3 --max_batch_size=16 --hop_fraction=0.5,0.5,0.125 --artist="Willie Nelson" --genre=Country
 ```
-### For nccl backend (>1 GPUS)
+### For >1 GPUS switch args as follows:
 ```
-python jukebox/sample.py --model=1b_lyrics --backend_to_run=nccl --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=3 --hop_fraction=0.5,0.5,0.125  
+--backend_to_run=nccl 
 ```
 The above generates the first `sample_length_in_seconds` seconds of audio from a song of total length `total_sample_length_in_seconds`.  
 
@@ -224,7 +224,7 @@ A summary of all sampling data including zs, x, labels and sampling_kwargs is st
 The hps are for a V100 GPU with 16 GB GPU memory. 
 CJMNOTE:  In Colab Enterprise, an L4 GPU (single) with 16 GB RAM (g2-std-16 L4_1 10 GB balanced disk) was successful in completing sampling. 
 
-Common Sample Rates (sr) & Their Uses:  
+Common Sample Rates (sr) & Their Uses (from AI source):  
 44.1 kHz (44,100 Hz): The standard for audio CDs and MP3s, covering the range of human hearing (up to 22.05 kHz).  
 48 kHz (48,000 Hz): The standard for video, film, and most digital audio workstations (DAWs), offering a slight buffer for video syncing and processing.  
 96 kHz & 192 kHz: Used in high-resolution audio production for capturing more detail, offering more flexibility for effects like time-stretching, and for professional mastering.  
