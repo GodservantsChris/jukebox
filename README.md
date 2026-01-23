@@ -212,7 +212,8 @@ python jukebox/sample.py --model=1b_lyrics --backend_to_run=gloo --name=/content
 ```
 python jukebox/sample.py --model=1b_lyrics --backend_to_run=nccl --name=/content/jukebox_outputs/sample_1b/ --levels=3 --sample_length_in_seconds=20 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=3 --hop_fraction=0.5,0.5,0.125  
 ```
-The above generates the first `sample_length_in_seconds` seconds of audio from a song of total length `total_sample_length_in_seconds`.
+The above generates the first `sample_length_in_seconds` seconds of audio from a song of total length `total_sample_length_in_seconds`.  
+
 To use multiple GPU's, launch the above scripts as `mpiexec -n {ngpus} python jukebox/sample.py ...` so they use `{ngpus}`
 
 The samples decoded from each level are stored in `{name}/level_{level}`. 
@@ -226,9 +227,9 @@ Common Sample Rates (sr) & Their Uses:
 44.1 kHz (44,100 Hz): The standard for audio CDs and MP3s, covering the range of human hearing (up to 22.05 kHz).  
 48 kHz (48,000 Hz): The standard for video, film, and most digital audio workstations (DAWs), offering a slight buffer for video syncing and processing.  
 96 kHz & 192 kHz: Used in high-resolution audio production for capturing more detail, offering more flexibility for effects like time-stretching, and for professional mastering.  
+CJMNOTE:  Setting sr=96000 resulted in "fast-forwarded" music  
 
-The `1b_lyrics`, `5b`, and `5b_lyrics` top-level priors take up 
-3.8 GB, 10.3 GB, and 11.5 GB, respectively. The peak memory usage to store transformer key, value cache is about 400 MB for `1b_lyrics` and 1 GB for `5b_lyrics` per sample.  
+The `1b_lyrics`, `5b`, and `5b_lyrics` top-level priors take up 3.8 GB, 10.3 GB, and 11.5 GB, respectively. The peak memory usage to store transformer key, value cache is about 400 MB for `1b_lyrics` and 1 GB for `5b_lyrics` per sample.  
 
 If you are having trouble with CUDA OOM issues, try `1b_lyrics` or 
 decrease `max_batch_size` in sample.py, and `--n_samples` in the script call.
@@ -241,7 +242,8 @@ To continue sampling from already generated codes for a longer duration, you can
 ```
 python jukebox/sample.py --model=5b_lyrics --name=sample_5b --levels=3 --mode=continue --codes_file=sample_5b/level_0/data.pth.tar --sample_length_in_seconds=40 --total_sample_length_in_seconds=180 --sr=44100 --n_samples=6 --hop_fraction=0.5,0.5,0.125
 ```
-Here, we take the 20 seconds samples saved from the first sampling run at `sample_5b/level_0/data.pth.tar` and continue by adding 20 more seconds. 
+Here, we set mode to 'continue' (set --code_file also) and take the 20 seconds samples saved from the first sampling run at `sample_5b/level_0/data.pth.tar` and continue by adding 20 more seconds.  
+(--sample_length_in_seconds=40) 
 
 You could also continue directly from the level 2 saved outputs, just pass `--codes_file=sample_5b/level_2/data.pth.tar`.
  Note this will upsample the full 40 seconds song at the end.
