@@ -233,7 +233,7 @@ CJMNOTE:  Setting sr=96000 resulted in "fast-forwarded" music
 The `1b_lyrics`, `5b`, and `5b_lyrics` top-level priors take up 3.8 GB, 10.3 GB, and 11.5 GB, respectively. The peak memory usage to store transformer key, value cache is about 400 MB for `1b_lyrics` and 1 GB for `5b_lyrics` per sample.  
 
 If you are having trouble with CUDA OOM issues, try `1b_lyrics` or 
-decrease `max_batch_size` in sample.py, and `--n_samples` in the script call.
+decrease `max_batch_size` and `--n_samples` in the script call.
 
 On a V100, it takes about 3 hrs to fully sample 20 seconds of music. Since this is a long time, it is recommended to use `n_samples > 1` so you can generate as many samples as possible in parallel.  
 
