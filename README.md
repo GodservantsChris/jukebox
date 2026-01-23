@@ -221,7 +221,8 @@ You can also view the samples as an html with the aligned lyrics under `{name}/l
 Run `python -m http.server` and open the html through the server to see the lyrics animate as the song plays.  
 A summary of all sampling data including zs, x, labels and sampling_kwargs is stored in `{name}/level_{level}/data.pth.tar`.
 
-The hps are for a V100 GPU with 16 GB GPU memory.  
+The hps are for a V100 GPU with 16 GB GPU memory. 
+CJMNOTE:  In Colab Enterprise, an L4 GPU (single) with 16 GB RAM (g2-std-16 L4_1 10 GB balanced disk) was successful in completing sampling. 
 
 Common Sample Rates (sr) & Their Uses:  
 44.1 kHz (44,100 Hz): The standard for audio CDs and MP3s, covering the range of human hearing (up to 22.05 kHz).  
