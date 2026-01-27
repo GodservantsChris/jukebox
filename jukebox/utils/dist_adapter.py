@@ -68,10 +68,7 @@ def init_process_group(backend, init_method):
             if is_available:
                 emsgOperation = f"calling base initialization"
                 res = _init_process_group(backend, init_method)
-                if res:
-                    return res
-                else:
-                    raise NameError(f"_init_process_group(backend=" + str(backend) + f", init_method=" + str(init_method) + f") returned empty.")                
+                return res
             #else: do nothing
         else: raise NameError
     except NameError as e:
@@ -122,11 +119,8 @@ def _init_process_group(backend, init_method):
                 if isBackendAvailable:
                     print(f"Connecting to master_addr: {os.environ["MASTER_ADDR"]} on port {os.environ["MASTER_PORT"]}")# Pin this rank to a specific GPU on the node
                     emsgOperation = f"initializing distributed services"
-                    res = dist.init_process_group(backend, init_method)
-                    if res:
-                        return res
-                    else:
-                        raise NameError(f"torch.distributed.init_process_group(backend=" + str(backend) + f", init_method=" + str(init_method) + f") returned empty.")  
+                    res = dist.init_process_group(backend, init_method) 
+                    return res
                 else: raise NameError(f"Backend (" + backend + ") is not available.")
             else: raise NameError
         else: raise NameError
