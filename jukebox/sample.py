@@ -181,7 +181,6 @@ def save_samples(model, device, hps, sample_hps, metas):
     try:        
         emsgOperation = f"validating model"
         if model:
-            print(f"hps: ", hps)
             emsgOperation = f"making the model"
             vqvae, priors = make_model(model, device, hps)
             emsgOperation = f"asserting that there is atleast one ctx in get_z_conds. Please choose a longer sample length"
@@ -267,14 +266,14 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
     #
     print(f'mode: ' + str(mode))
     #
-    arg_lyrics = '''All dressed up to go dreaming
+    """ arg_lyrics = '''All dressed up to go dreaming
     Now don't tell me I'm wrong
     And what a night to go dreaming
     Mind, if I tag along?
 
     If I say, I love you, I want you to know
     It's not just because there's moonlight, although
-    Moonlight becomes you, moonlight becomes you so'''
+    Moonlight becomes you, moonlight becomes you so''' """
     #
     from jukebox.utils.dist_utils import setup_dist_from_mpi
     emsgContext = f"sample.run()"
@@ -300,6 +299,7 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
             if device:
                 emsgOperation = f"creating Hyperparams from **kwargs (" + str(kwargs) + f")"
                 hps = Hyperparams(**kwargs)
+                print(f"hps: ", hps)
                 emsgOperation = f"creating Hyperparams from input args" + f"; rank = " + str(rank)  + f"; local_rank = " + str(local_rank) + f"; device = "+ str(device) + f";"
                 sample_hps = Hyperparams(dict(mode=mode, codes_file=codes_file, audio_file=audio_file, prompt_length_in_seconds=prompt_length_in_seconds))  
                 emsgOperation = f"setting total_length"
@@ -315,7 +315,7 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
                 metas = [
                         dict(artist=hps.artist,
                             genre=hps.genre,
-                            lyrics=arg_lyrics,
+                            lyrics=hps.lyrics,
                             total_length=total_length,
                             offset=offset,
                             ),
@@ -323,7 +323,7 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
                 emsgOperation = f"determining if torch gradient calculations are disabled"
                 with t.no_grad():
                     emsgOperation = f"saving samples when torch gradient calculations are disabled"
-                    save_samples(model, device, hps, sample_hps, metas)
+                    #save_samples(model, device, hps, sample_hps, metas)
             else: raise NameError
         else: raise NameError
     except NameError as e:
