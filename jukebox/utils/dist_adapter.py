@@ -117,7 +117,8 @@ def _init_process_group(backend, init_method):
                 else: 
                     if backend == "nccl": isBackendAvailable = dist.is_nccl_available()
                 if isBackendAvailable:
-                    print(f"Connecting to master_addr: {os.environ["MASTER_ADDR"]} on port {os.environ["MASTER_PORT"]}")# Pin this rank to a specific GPU on the node
+                    print(f"Connecting to master_addr: {os.environ["MASTER_ADDR"]} on port {os.environ["MASTER_PORT"]}" + f"; backend = " + str(backend) + f"; init_method = " + str(init_method))
+                    # Pin this rank to a specific GPU on the node
                     emsgOperation = f"initializing distributed services"
                     res = dist.init_process_group(backend, init_method) 
                     return res
