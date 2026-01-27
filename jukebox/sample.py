@@ -292,38 +292,40 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
         if model:
             emsgOperation = f"setting up distributed devices and getting device from mpi"
             dictSetup = setup_dist_from_mpi(backend = backend_to_run, verbose=True)
-            rank = dictSetup[0]
-            local_rank = dictSetup[1]
-            device = dictSetup[2]
-            emsgOperation = f"validating device"
-            if device:
-                emsgOperation = f"creating Hyperparams from **kwargs (" + str(kwargs) + f")"
-                hps = Hyperparams(**kwargs)
-                print(f"hps: ", hps)
-                emsgOperation = f"creating Hyperparams from input args" + f"; rank = " + str(rank)  + f"; local_rank = " + str(local_rank) + f"; device = "+ str(device) + f";"
-                sample_hps = Hyperparams(dict(mode=mode, codes_file=codes_file, audio_file=audio_file, prompt_length_in_seconds=prompt_length_in_seconds))  
-                emsgOperation = f"setting total_length"
-                total_length = hps.total_sample_length_in_seconds * hps.sr
-                emsgOperation = f"setting offset"
-                offset = 0
-                #
-                emsgOperation = f"setting metas"
-                # Set artist/genre/lyrics for your samples here!
-                # We used different label sets in our models, but you can write the human friendly names here and we'll map them under the hood for each model.
-                # For the 5b/5b_lyrics model and the upsamplers, labeller will look up artist and genres in v2 set. (after lowercasing, removing non-alphanumerics and collapsing whitespaces to _).
-                # For the 1b_lyrics top level, labeller will look up artist and genres in v3 set (after lowercasing).
-                metas = [
-                        dict(artist=hps.artist,
-                            genre=hps.genre,
-                            lyrics=hps.lyrics,
-                            total_length=total_length,
-                            offset=offset,
-                            ),
-                        ]
-                emsgOperation = f"determining if torch gradient calculations are disabled"
-                with t.no_grad():
-                    emsgOperation = f"saving samples when torch gradient calculations are disabled"
-                    #save_samples(model, device, hps, sample_hps, metas)
+            if dictSetup:
+                rank = dictSetup[0]
+                local_rank = dictSetup[1]
+                device = dictSetup[2]
+                emsgOperation = f"validating device"
+                if device:
+                    emsgOperation = f"creating Hyperparams from **kwargs (" + str(kwargs) + f")"
+                    hps = Hyperparams(**kwargs)
+                    print(f"hps: ", hps)
+                    emsgOperation = f"creating Hyperparams from input args" + f"; rank = " + str(rank)  + f"; local_rank = " + str(local_rank) + f"; device = "+ str(device) + f";"
+                    sample_hps = Hyperparams(dict(mode=mode, codes_file=codes_file, audio_file=audio_file, prompt_length_in_seconds=prompt_length_in_seconds))  
+                    emsgOperation = f"setting total_length"
+                    total_length = hps.total_sample_length_in_seconds * hps.sr
+                    emsgOperation = f"setting offset"
+                    offset = 0
+                    #
+                    emsgOperation = f"setting metas"
+                    # Set artist/genre/lyrics for your samples here!
+                    # We used different label sets in our models, but you can write the human friendly names here and we'll map them under the hood for each model.
+                    # For the 5b/5b_lyrics model and the upsamplers, labeller will look up artist and genres in v2 set. (after lowercasing, removing non-alphanumerics and collapsing whitespaces to _).
+                    # For the 1b_lyrics top level, labeller will look up artist and genres in v3 set (after lowercasing).
+                    metas = [
+                            dict(artist=hps.artist,
+                                genre=hps.genre,
+                                lyrics=hps.lyrics,
+                                total_length=total_length,
+                                offset=offset,
+                                ),
+                            ]
+                    emsgOperation = f"determining if torch gradient calculations are disabled"
+                    with t.no_grad():
+                        emsgOperation = f"saving samples when torch gradient calculations are disabled"
+                        save_samples(model, device, hps, sample_hps, metas)
+                else: raise NameError(f"The device returned is empty.")
             else: raise NameError
         else: raise NameError
     except NameError as e:

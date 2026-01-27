@@ -40,11 +40,12 @@ def allgather_lists(xs):
 
     return [xs[i][:lengths[i]].cpu().numpy().tolist() for i in range(total_bs)]
 
-def setup_dist_from_mpi(backend="nccl", n_attempts=5, verbose=False
-) -> dict:
+def setup_dist_from_mpi(backend="nccl", verbose=False) -> dict:
     mpi_rank = 0
     local_rank = 0
     device = None
+    n_attempts=1
+    if backend == "nccl": n_attempts=5
     emsgContext = f"dist_utils.setup_dist_from_mpi(...)"
     emsgOperation = f""
     try: 
@@ -85,7 +86,7 @@ def _setup_dist_from_mpi(backend: str, n_attempts: int, verbose: bool) -> dict:
             emsgOperation = f"getting mpi_size"
             mpi_size = MPI.COMM_WORLD.Get_size()
             emsgOperation = f"setting environment variables"
-            setup_env(world_size= mpi_size, rank =mpi_rank, verbose=verbose)
+            setup_env(world_size= mpi_size, rank =mpi_rank, verbose=verbose)            
             # Pin this rank to a specific GPU on the node
             local_rank = mpi_rank % 8
             emsgOperation = f"determining if torch.cuda is available"
@@ -170,8 +171,6 @@ def setup_env(world_size=1, rank=0, verbose=False):
     os.environ["NCCL_LL_THRESHOLD"] = "0"
     os.environ["NCCL_NSOCKS_PERTHREAD"] = "2"
     os.environ["NCCL_SOCKET_NTHREADS"] = "8"
-    if verbose:
-        print(f"Connecting to master_addr: {master_addr} on port {master_port}")
 
 def get_local_ip():
     """Detect a valid local IP address for MASTER_ADDR."""
