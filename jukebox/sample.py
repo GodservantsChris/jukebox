@@ -342,5 +342,46 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
         elapsed_time = end_time - start_time
         print(f"Elapsed time: {elapsed_time:.4f} seconds")
 
+def find_free_port():
+    import socket
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("", 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+def worker_init_process_group(rank, world_size, port):
+    import torch.distributed as dist2
+    from torch.distributed import TCPStore
+
+    storeTCP = TCPStore(
+        host_name="127.0.0.1",
+        port=port,
+        world_size=world_size,
+        is_master=(rank == 0),
+        wait_for_workers=True,
+        use_libuv=False
+    )
+
+    dist2.init_process_group(
+        backend="gloo",
+        store=storeTCP,
+        rank=rank,
+        world_size=world_size
+    )
+
+    print(f"Rank {rank} initialization executed.")
+
+def spawn_init_process_group():
+    import torch.multiprocessing as mp
+
+    world_size = 2
+    port = find_free_port()
+
+    mp.set_start_method("spawn", force=True)
+    mp.spawn(worker_init_process_group, args=(world_size,port), nprocs=world_size)
+
 if __name__ == '__main__':
     fire.Fire(run)
+    #spawn_init_process_group()
