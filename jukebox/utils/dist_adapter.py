@@ -1,4 +1,5 @@
 import os
+import socket
 import torch.distributed as dist
 from enum import Enum
 
@@ -112,6 +113,11 @@ def _init_process_group(backend):
                 else: 
                     if backend == "nccl": isBackendAvailable = dist.is_nccl_available()
                 if isBackendAvailable:
+                    # Set Master Address and Port
+                    master_addr = get_local_ip()
+                    os.environ["MASTER_ADDR"] = master_addr
+                    master_port = get_free_port()
+                    os.environ["MASTER_PORT"] = str(master_port)
                     print(f"Connecting to master_addr: {os.environ["MASTER_ADDR"]} on port {os.environ["MASTER_PORT"]}" + f"; backend = " + str(backend) )
                     # Pin this rank to a specific GPU on the node
                     emsgOperation = f"initializing distributed services"
@@ -126,4 +132,21 @@ def _init_process_group(backend):
         emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
         raise Exception(emsg)
 
+def get_local_ip():
+    """Detect a valid local IP address for MASTER_ADDR."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # connect to a public DNS server (doesn't send data)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
+
+def get_free_port():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('', 0))              # bind to a free ephemeral port
+    port = s.getsockname()[1]    # get the port number
+    s.close()
+    return port
 
