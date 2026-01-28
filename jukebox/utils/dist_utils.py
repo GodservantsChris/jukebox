@@ -1,5 +1,4 @@
 import os
-import socket
 from time import sleep
 import torch
 import jukebox.utils.dist_adapter as dist
@@ -86,7 +85,7 @@ def _setup_dist_from_mpi(backend: str, n_attempts: int, verbose: bool) -> dict:
             emsgOperation = f"getting mpi_size"
             mpi_size = MPI.COMM_WORLD.Get_size()
             emsgOperation = f"setting environment variables"
-            setup_env(world_size= mpi_size, rank =mpi_rank, verbose=verbose)            
+            setup_env(world_size= mpi_size, rank =mpi_rank)            
             # Pin this rank to a specific GPU on the node
             local_rank = mpi_rank % 8
             emsgOperation = f"determining if torch.cuda is available"
@@ -159,33 +158,10 @@ def _setup_dist_from_mpi(backend: str, n_attempts: int, verbose: bool) -> dict:
         print(f'Completed: ' + emsgContext + f": mpi_rank = " + str(mpi_rank) + f"; local_rank = " + str(local_rank) + f"; device = "+ str(device) + f";")
         return mpi_rank, local_rank, device
 
-def setup_env(world_size=1, rank=0, verbose=False):
-    # Detect a valid IP address
-    master_addr = get_local_ip()
-    os.environ["MASTER_ADDR"] = master_addr
-    master_port = get_free_port()
-    os.environ["MASTER_PORT"] = str(master_port)
+def setup_env(world_size=1, rank=0):
     os.environ["WORLD_SIZE"] = str(world_size)
     os.environ["RANK"] = str(rank)
     os.environ["USE_LIBUV"] = "0"  # ensure gloo runs without libuv
     os.environ["NCCL_LL_THRESHOLD"] = "0"
     os.environ["NCCL_NSOCKS_PERTHREAD"] = "2"
     os.environ["NCCL_SOCKET_NTHREADS"] = "8"
-
-def get_local_ip():
-    """Detect a valid local IP address for MASTER_ADDR."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # connect to a public DNS server (doesn't send data)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-    finally:
-        s.close()
-    return ip
-
-def get_free_port():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('', 0))              # bind to a free ephemeral port
-    port = s.getsockname()[1]    # get the port number
-    s.close()
-    return port
