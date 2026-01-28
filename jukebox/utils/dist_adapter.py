@@ -57,26 +57,22 @@ def broadcast(tensor, src):
         return _broadcast(tensor, src)
     #else: do nothing
 
-def init_process_group(backend, init_method):
-    res = None
+def init_process_group(backend):
     emsgContext = f"dist_adapter.init_process_group(...)"
     emsgOperation = f""
     try:        
-        emsgOperation = f"validating backend and init_method"
-        if backend and init_method:
+        emsgOperation = f"validating backend"
+        if backend:
             emsgOperation = f"determining if the distributed service is available"
             if is_available:
                 emsgOperation = f"calling base initialization"
-                res = _init_process_group(backend, init_method)
-                return res
+                _init_process_group(backend)
             #else: do nothing
         else: raise NameError
     except NameError as e:
-        res = None
         emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)  
         raise Exception(emsg)
     except Exception as e:
-        res = None
         emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
         raise Exception(emsg)
 
@@ -101,13 +97,12 @@ def _reduce(tensor, dst, op):
 def _broadcast(tensor, src):
     return dist.broadcast(tensor, src)
 
-def _init_process_group(backend, init_method):
-    res = None
+def _init_process_group(backend):
     emsgContext = f"dist_adapter._init_process_group(...)"
     emsgOperation = f""
     try:
-        emsgOperation = f"validating backend and init_method"
-        if backend and init_method:
+        emsgOperation = f"validating backend"
+        if backend:
             emsgOperation = f"determining if the distributed service is available"
             if is_available:
                 emsgOperation = f"determining if the backend is available; backend "
@@ -117,20 +112,17 @@ def _init_process_group(backend, init_method):
                 else: 
                     if backend == "nccl": isBackendAvailable = dist.is_nccl_available()
                 if isBackendAvailable:
-                    print(f"Connecting to master_addr: {os.environ["MASTER_ADDR"]} on port {os.environ["MASTER_PORT"]}" + f"; backend = " + str(backend) + f"; init_method = " + str(init_method))
+                    print(f"Connecting to master_addr: {os.environ["MASTER_ADDR"]} on port {os.environ["MASTER_PORT"]}" + f"; backend = " + str(backend) )
                     # Pin this rank to a specific GPU on the node
                     emsgOperation = f"initializing distributed services"
-                    res = dist.init_process_group(backend, init_method) 
-                    return res
+                    dist.init_process_group(backend, f"env://")
                 else: raise NameError(f"Backend (" + backend + ") is not available.")
             else: raise NameError
         else: raise NameError
     except NameError as e:
-        res = None
         emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
         raise Exception(emsg)
     except Exception as e:
-        res = None
         emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
         raise Exception(emsg)
 

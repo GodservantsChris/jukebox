@@ -101,7 +101,7 @@ def _setup_dist_from_mpi(backend: str, n_attempts: int, verbose: bool) -> dict:
                 try:
                     isInitialized = False
                     emsgLoop = f" initializing process group"
-                    dist.init_process_group(backend=backend, init_method=f"env://")
+                    dist.init_process_group(backend=backend)
                     emsgLoop = f"determining if the distributed setup is initialized"
                     isInitialized = dist.dist.is_initialized()
                     emsgLoop = f"checking isInitialized"
