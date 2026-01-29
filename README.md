@@ -36,7 +36,6 @@ files.download('/content/jukebox_outputs/sample_1b/level_2/item_0.wav')
 ##### If copied to persistent storage (see below)
 files.download('/home/jupyter/jukebox_outputs/sample_1b/level_2/item_0.wav')  
 
-
 #### Copy it to your Drive folder  
 Python:  
 !cp /content/jukebox/samples/sample.wav output_dir  
@@ -76,28 +75,37 @@ use the full path in the --name parameter to control where outputs go:
   !ls -R /content/jukebox_outputs  
 
 ## Windows Desktop
-For Desktop VS Code IDE the installed files (conda or pip installs) are located at C:\Users\<YourUsername>\miniconda3\envs\jukebox\Lib\site-packages  
+For Desktop VS Code IDE the installed files (conda or pip installs) are located at C:\Users\<YourUsername>\miniconda3\envs\jukebox\Lib\site-packages 
 
-# Run using GPU
+## Debian on WSL
+envs\jukebox\Lib\python3.13\site-packages
+
+# Systems
 ## Colab Environment
 - Connect to a Hosted Runtime that is type L4 GPU
 ## Windows Desktop
-- Use a computer that has NVIDIA GPU Processor
+- Install WSl and Debian
 
 # Clone the jukebox repository
+## Debian on WSL - Folder creation
+mkdir -p ~/content  
+cd ~/content  
+## Cloning
 git clone -b [branchName] https://[URLtoRepositoryWithJukeboxCode]  [on desktop - indicate a project name] 
 For example:  
-!git clone -b Jukebox-Python_3_12 https://github.com/[github username]/jukebox.git jukebox-python-3-12
+git clone -b Jukebox-Python_3_12 https://github.com/[github username]/jukebox.git jukebox-python-3-12
 cd jukebox  
 ## Update from the jukebox respository (Colab Environment)
 %cd /content/jukebox  
-!git pull origin Jukebox-Python_3_12  
+git pull origin Jukebox-Python_3_12  
 
 # Mount Google Drive in Colab 
 google.colab.drive.mount is not supported in Colab Enterprise.  
 from google.colab import drive  
 drive.mount('/content/drive')  
-- Mounted at /content/drive   
+- Mounted at /content/drive  
+
+# Create Jukebox_Outputs
 ## Colab Enterprise
 %cd /content/jukebox  
 import os  
@@ -110,10 +118,15 @@ try:
 except FileExistsError:  
     print(f"Directory '{directory_name}' already exists.")  
 except FileNotFoundError:  
-    print(f"Parent directory does not exist.")  
+    print(f"Parent directory does not exist.")
+
+## Deban on WSL
+cd /content
+mkdir jukebox_outputs  
+cd ~/jukebox_outputs   
 
 # Conda Install
-## Colab Environment - Not needed and interferes with the installed version of torch
+## Colab and WSL-Debian Environments - Not needed and interferes with the installed version of torch
 But, if desired:  
 Python:  
 !pip install -q condacolab  
@@ -151,12 +164,23 @@ To make sure VS Code uses the jukebox environment for all Python operations:
 - Choose the one that looks like:  
  (jukebox) C:\Users\<YourUsername>\Miniconda3\envs\jukebox\python.exe
 
+# Python Environment for Debian on WSL
+## Create the environment
+python3 -m venv ~/venvs/jukebox
+## Activate the environment
+source ~/venvs/jukebox/bin/activate
+## Deactivate the environment
+deactivate
+## Remove the files from the environment
+rm -rf ~/venvs/jukebox
+
 # Install required modules
 ## For Sampling
-### cuda and torch - Not needed since already installed in Colab Enterprise
+### cuda and torch
+#### Colab Enterprise - Not needed since already installed in 
 But, if desired:  
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121  
-### Verification
+##### Verification
 import torch  
 print("CUDA available:", torch.cuda.is_available())  
 print("PyTorch CUDA version:", torch.version.cuda)  
@@ -174,6 +198,19 @@ CUDA available: True
 PyTorch CUDA version: 12.6  
 GPU: NVIDIA L4
 GPU count: 1
+#### Debian on WSL
+##### For CPU only Windows Systems
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu  
+##### Verification
+python3 - << 'EOF'  
+import torch  
+print("PyTorch version:", torch.__version__)  
+print("CUDA available:", torch.cuda.is_available())  
+EOF  
+  
+Expected output:  
+- A valid PyTorch version  
+- CUDA available: False (correct for your hardware)  
 
 ### requirements.txt and jukebox
 pip install -r requirements.txt  
