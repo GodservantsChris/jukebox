@@ -213,11 +213,37 @@ Expected output:
 - CUDA available: False (correct for your hardware)  
 
 ### requirements.txt and jukebox
+cd /content/jukebox
 pip install -r requirements.txt  
 pip install -e .  
 
-### For Desktop - Need tqdm
+### For Desktop and Debian on WSL - Need tqdm
+cd /content/jukebox
 pip install tqdm
+
+### For Debian on WSL - need MPI Installation
+sudo apt update  
+sudo apt install -y openmpi-bin libopenmpi-dev 
+
+#### Verification
+mpirun --version
+
+#### reinstall mpi4py so it detects OpenMPI:
+- In an activated environment
+pip install --force-reinstall --no-cache-dir mpi4py
+
+#### Test
+##### Create test file
+nano test_mpi.py
+##### Conetnts of test file
+from mpi4py import MPI  
+comm = MPI.COMM_WORLD  
+print("Rank:", comm.Get_rank(), "Size:", comm.Get_size())  
+##### Run the test
+mpirun -n 2 python3 test_mpi.py
+###### Expected Output:
+Rank: 0 Size: 2  
+Rank: 1 Size: 2  
 
 ## For Training
 conda install av==14.2.0 -c conda-forge  
