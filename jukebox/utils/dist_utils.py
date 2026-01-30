@@ -55,6 +55,7 @@ def setup_dist_from_mpi(backend="nccl", verbose=False) -> dict:
         else:
             use_cuda = torch.cuda.is_available()
             print(emsgContext + f'; Torch.distributed.is_available is False; Torch.cuda_is_available is {use_cuda}')
+            print(f"*****")
             if use_cuda:
                 device = torch.device("cuda", local_rank)
                 torch.cuda.set_device(local_rank)
@@ -72,11 +73,13 @@ def _setup_dist_from_mpi(backend: str, n_attempts: int, verbose: bool) -> dict:
     device = None
     emsgContext = f"dist_utils._setup_dist_from_mpi(...)"
     emsgOperation = f""
+    if verbose:                
+        print(f"*****")
+        print(emsgContext + f": backend = " + str(backend))
     from mpi4py import MPI  # This must be imported in order to get errors from all ranks to show up
     try:
         emsgOperation = f"validating backend"
         if backend:
-            if verbose: print(emsgContext + f": backend = " + backend)
             emsgOperation = f"getting mpi_rank"
             mpi_rank = MPI.COMM_WORLD.Get_rank()
             emsgOperation = f"getting mpi_size"
@@ -152,7 +155,9 @@ def _setup_dist_from_mpi(backend: str, n_attempts: int, verbose: bool) -> dict:
     except Exception as e:
         print(f'Exception while ' + emsgOperation + f' in ' + emsgContext + f': ' + repr(e) )
     finally:
-        print(f'Completed: ' + emsgContext + f": mpi_rank = " + str(mpi_rank) + f"; local_rank = " + str(local_rank) + f"; device = "+ str(device) + f";")
+        if verbose:
+            print(f'Completed: ' + emsgContext + f": mpi_rank = " + str(mpi_rank) + f"; local_rank = " + str(local_rank) + f"; device = "+ str(device) + f";")
+            print(f"*****")
         return mpi_rank, local_rank, device
 
 def setup_env(world_size=1, rank=0):
