@@ -40,52 +40,79 @@ def _loss_fn(loss_fn, x_target, x_pred, hps):
         assert False, f"Unknown loss_fn {loss_fn}"
 
 class VQVAE(nn.Module):
-    def __init__(self, input_shape, levels, downs_t, strides_t,
+    def __init__(self, device, input_shape, levels, downs_t, strides_t,
                  emb_width, l_bins, mu, commit, spectral, multispectral,
-                 multipliers=None, use_bottleneck=True, **block_kwargs):
-        super().__init__()
+                 multipliers=None, use_bottleneck=True,
+                 **block_kwargs):
+        emsgContext = f"make_models.VQVAE.__init__(device=" + str(device) + ")"
+        emsgOperation = f""
+        try:
+            emsgOperation = f"calling super().__init__()"
+            super().__init__()
 
-        self.sample_length = input_shape[0]
-        x_shape, x_channels = input_shape[:-1], input_shape[-1]
-        self.x_shape = x_shape
+            emsgOperation = f"setting first properties on self"
+            self.device = device
+            self.sample_length = input_shape[0]
+            x_shape, x_channels = input_shape[:-1], input_shape[-1]
+            self.x_shape = x_shape
 
-        self.downsamples = calculate_strides(strides_t, downs_t)
-        self.hop_lengths = np.cumprod(self.downsamples)
-        self.z_shapes = z_shapes = [(x_shape[0] // self.hop_lengths[level],) for level in range(levels)]
-        self.levels = levels
+            self.downsamples = calculate_strides(strides_t, downs_t)
+            self.hop_lengths = np.cumprod(self.downsamples)
+            self.z_shapes = z_shapes = [(x_shape[0] // self.hop_lengths[level],) for level in range(levels)]
+            self.levels = levels
 
-        if multipliers is None:
-            self.multipliers = [1] * levels
-        else:
-            assert len(multipliers) == levels, "Invalid number of multipliers"
-            self.multipliers = multipliers
-        def _block_kwargs(level):
-            this_block_kwargs = dict(block_kwargs)
-            this_block_kwargs["width"] *= self.multipliers[level]
-            this_block_kwargs["depth"] *= self.multipliers[level]
-            return this_block_kwargs
+            emsgOperation = f"setting multipliers on self"
+            if multipliers is None:
+                self.multipliers = [1] * levels
+            else:
+                assert len(multipliers) == levels, "Invalid number of multipliers"
+                self.multipliers = multipliers
+            emsgOperation = f"defining _block_kwargs(level)"
+            def _block_kwargs(level):
+                this_block_kwargs = dict(block_kwargs)
+                this_block_kwargs["width"] *= self.multipliers[level]
+                this_block_kwargs["depth"] *= self.multipliers[level]
+                return this_block_kwargs
 
-        encoder = lambda level: Encoder(x_channels, emb_width, level + 1,
-                                        downs_t[:level+1], strides_t[:level+1], **_block_kwargs(level))
-        decoder = lambda level: Decoder(x_channels, emb_width, level + 1,
-                                        downs_t[:level+1], strides_t[:level+1], **_block_kwargs(level))
-        self.encoders = nn.ModuleList()
-        self.decoders = nn.ModuleList()
-        for level in range(levels):
-            self.encoders.append(encoder(level))
-            self.decoders.append(decoder(level))
+            emsgOperation = f"creating Encoder object"
+            encoder = lambda level: Encoder(x_channels, emb_width, level + 1,
+                                            downs_t[:level+1], strides_t[:level+1], **_block_kwargs(level))
+            emsgOperation = f"creating Decoder object"
+            decoder = lambda level: Decoder(x_channels, emb_width, level + 1,
+                                            downs_t[:level+1], strides_t[:level+1], **_block_kwargs(level))
+            emsgOperation = f"setting encoders on self from nn.ModuleList()"
+            self.encoders = nn.ModuleList()
+            emsgOperation = f"setting decoders on self from nn.ModuleList()"
+            self.decoders = nn.ModuleList()
+            emsgOperation = f"iterating levels to append to encoders and decoders"
+            for level in range(levels):
+                self.encoders.append(encoder(level))
+                self.decoders.append(decoder(level))
 
-        if use_bottleneck:
-            self.bottleneck = Bottleneck(l_bins, emb_width, mu, levels)
-        else:
-            self.bottleneck = NoBottleneck(levels)
+            if use_bottleneck:
+                emsgOperation = f"setting bottleneck on self as Bottleneck object"
+                self.bottleneck = Bottleneck(l_bins, emb_width, mu, levels)
+            else:
+                emsgOperation = f"setting bottleneck on self as NoBottleneck object"
+                self.bottleneck = NoBottleneck(levels)
 
-        self.downs_t = downs_t
-        self.strides_t = strides_t
-        self.l_bins = l_bins
-        self.commit = commit
-        self.spectral = spectral
-        self.multispectral = multispectral
+            emsgOperation = f"setting last properties on self"
+            self.downs_t = downs_t
+            self.strides_t = strides_t
+            self.l_bins = l_bins
+            self.commit = commit
+            self.spectral = spectral
+            self.multispectral = multispectral
+            
+        except AssertionError as e:
+            emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except NameError as e:
+            emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except Exception as e:
+            emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
 
     def preprocess(self, x):
         # x: NTC [-1,1] -> NCT [-1,1]
@@ -144,7 +171,7 @@ class VQVAE(nn.Module):
         return zs
 
     def sample(self, n_samples):
-        zs = [t.randint(0, self.l_bins, size=(n_samples, *z_shape), device='cuda') for z_shape in self.z_shapes]
+        zs = [t.randint(0, self.l_bins, size=(n_samples, *z_shape), device=self.device) for z_shape in self.z_shapes]
         return self.decode(zs)
 
     def forward(self, x, hps, loss_fn='l1'):

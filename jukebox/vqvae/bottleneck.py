@@ -6,18 +6,46 @@ import jukebox.utils.dist_adapter as dist
 
 class BottleneckBlock(nn.Module):
     def __init__(self, k_bins, emb_width, mu):
-        super().__init__()
-        self.k_bins = k_bins
-        self.emb_width = emb_width
-        self.mu = mu
-        self.reset_k()
-        self.threshold = 1.0
+        emsgContext = f"bottleneck.py.BottleneckBlock.__init__()"
+        emsgOperation = f""
+        try:        
+            emsgOperation = f"calling super().__init__()"
+            super().__init__()
+            emsgOperation = f"setting first properties on self"
+            self.k_bins = k_bins
+            self.emb_width = emb_width
+            self.mu = mu
+            emsgOperation = f"calling reset_k() on self"
+            self.reset_k()
+            emsgOperation = f"setting last properties on self"
+            self.threshold = 1.0
+
+        except NameError as e:
+            emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except Exception as e:
+            emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)       
 
     def reset_k(self):
-        self.init = False
-        self.k_sum = None
-        self.k_elem = None
-        self.register_buffer('k', t.zeros(self.k_bins, self.emb_width).cuda())
+        emsgContext = f"bottleneck.py.BottleneckBlock.reset_k()"
+        emsgOperation = f""
+        try:        
+            emsgOperation = f"setting properties on self"
+            self.init = False
+            self.k_sum = None
+            self.k_elem = None
+            emsgOperation = f"calling register_buffer('k', t.zeros(self.k_bins, self.emb_width).cuda()) on self"
+            self.register_buffer('k', t.zeros(self.k_bins, self.emb_width).cuda())
+
+        except NameError as e:
+            emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            print(emsg)
+        except Exception as e:
+            emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            print(emsg)
+        finally:
+            print(f'Completed: ' + emsgContext)        
 
     def _tile(self, x):
         d, ew = x.shape
@@ -181,12 +209,30 @@ class BottleneckBlock(nn.Module):
 
 class Bottleneck(nn.Module):
     def __init__(self, l_bins, emb_width, mu, levels):
-        super().__init__()
-        self.levels = levels
-        level_block = lambda level: BottleneckBlock(l_bins, emb_width, mu)
-        self.level_blocks = nn.ModuleList()
-        for level in range(self.levels):
-            self.level_blocks.append(level_block(level))
+        emsgContext = f"bottleneck.py.Bottleneck.__init__()"
+        emsgOperation = f""
+        try:        
+            emsgOperation = f"calling super().__init__()"
+            super().__init__()
+            emsgOperation = f"setting levels on self from levels arg"
+            self.levels = levels
+            emsgOperation = f"creating level_block function using lambda to create BottleneckBlock object"
+            level_block = lambda level: BottleneckBlock(l_bins, emb_width, mu)
+            emsgOperation = f"setting level_blocks on self from nn.ModuleList()"
+            self.level_blocks = nn.ModuleList()
+            emsgOperation = f"iterating self.levels to append level_block(level) to self_level_blocks"
+            for level in range(self.levels):
+                emsgOperation = f"calling level_block(level=" + str(level) + f")"
+                cur_level_block = level_block(level)
+                emsgOperation = f"appending cur_level_block to self.level_blocks"
+                self.level_blocks.append(cur_level_block)
+
+        except NameError as e:
+            emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except Exception as e:
+            emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
 
     def encode(self, xs):
         zs = [level_block.encode(x) for (level_block, x) in zip(self.level_blocks, xs)]
