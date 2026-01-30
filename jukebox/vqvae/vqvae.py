@@ -91,10 +91,10 @@ class VQVAE(nn.Module):
 
             if use_bottleneck:
                 emsgOperation = f"setting bottleneck on self as Bottleneck object"
-                self.bottleneck = Bottleneck(l_bins, emb_width, mu, levels)
+                self.bottleneck = Bottleneck(device, l_bins, emb_width, mu, levels)
             else:
                 emsgOperation = f"setting bottleneck on self as NoBottleneck object"
-                self.bottleneck = NoBottleneck(levels)
+                self.bottleneck = NoBottleneck(device, levels)
 
             emsgOperation = f"setting last properties on self"
             self.downs_t = downs_t

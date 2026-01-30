@@ -5,13 +5,14 @@ import torch.nn.functional as F
 import jukebox.utils.dist_adapter as dist
 
 class BottleneckBlock(nn.Module):
-    def __init__(self, k_bins, emb_width, mu):
+    def __init__(self, device, k_bins, emb_width, mu):
         emsgContext = f"bottleneck.py.BottleneckBlock.__init__()"
         emsgOperation = f""
         try:        
             emsgOperation = f"calling super().__init__()"
             super().__init__()
             emsgOperation = f"setting first properties on self"
+            self.device = device
             self.k_bins = k_bins
             self.emb_width = emb_width
             self.mu = mu
@@ -36,16 +37,14 @@ class BottleneckBlock(nn.Module):
             self.k_sum = None
             self.k_elem = None
             emsgOperation = f"calling register_buffer('k', t.zeros(self.k_bins, self.emb_width).cuda()) on self"
-            self.register_buffer('k', t.zeros(self.k_bins, self.emb_width).cuda())
+            self.register_buffer('k', t.zeros(self.k_bins, self.emb_width).to(self.device))
 
         except NameError as e:
             emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
-            print(emsg)
+            raise Exception(emsg)
         except Exception as e:
             emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
-            print(emsg)
-        finally:
-            print(f'Completed: ' + emsgContext)        
+            raise Exception(emsg)       
 
     def _tile(self, x):
         d, ew = x.shape
@@ -208,16 +207,18 @@ class BottleneckBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    def __init__(self, l_bins, emb_width, mu, levels):
+    def __init__(self, device, l_bins, emb_width, mu, levels):
         emsgContext = f"bottleneck.py.Bottleneck.__init__()"
         emsgOperation = f""
         try:        
             emsgOperation = f"calling super().__init__()"
             super().__init__()
+            emsg = f"setting device property on self from device arg"
+            self.device = device
             emsgOperation = f"setting levels on self from levels arg"
             self.levels = levels
             emsgOperation = f"creating level_block function using lambda to create BottleneckBlock object"
-            level_block = lambda level: BottleneckBlock(l_bins, emb_width, mu)
+            level_block = lambda level: BottleneckBlock(device, l_bins, emb_width, mu)
             emsgOperation = f"setting level_blocks on self from nn.ModuleList()"
             self.level_blocks = nn.ModuleList()
             emsgOperation = f"iterating self.levels to append level_block(level) to self_level_blocks"
@@ -266,8 +267,9 @@ class NoBottleneckBlock(nn.Module):
         pass
 
 class NoBottleneck(nn.Module):
-    def __init__(self, levels):
+    def __init__(self, device, levels):
         super().__init__()
+        self.device = device
         self.level_blocks = nn.ModuleList()
         self.levels = levels
         for level in range(levels):
