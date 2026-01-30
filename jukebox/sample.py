@@ -264,6 +264,8 @@ def save_samples(model, device, hps, sample_hps, metas):
 
 def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_file=None, prompt_length_in_seconds=None, **kwargs):
     #
+    verbose = True
+    #
     print(f'mode: ' + str(mode))
     #
     """ arg_lyrics = '''All dressed up to go dreaming
@@ -291,7 +293,7 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
         emsgOperation = f"validating model input"
         if model:
             emsgOperation = f"setting up distributed devices and getting device from mpi"
-            dictSetup = setup_dist_from_mpi(backend = backend_to_run, verbose=True)
+            dictSetup = setup_dist_from_mpi(backend = backend_to_run, verbose=verbose)
             if dictSetup:
                 rank = dictSetup[0]
                 local_rank = dictSetup[1]
@@ -300,7 +302,7 @@ def run(model, backend_to_run='nccl', mode='ancestral', codes_file=None, audio_f
                 if device:
                     emsgOperation = f"creating Hyperparams from **kwargs (" + str(kwargs) + f")"
                     hps = Hyperparams(**kwargs)
-                    print(f"hps: ", hps)
+                    if verbose: print(f"hps: ", hps)
                     emsgOperation = f"creating Hyperparams from input args" + f"; rank = " + str(rank)  + f"; local_rank = " + str(local_rank) + f"; device = "+ str(device) + f";"
                     sample_hps = Hyperparams(dict(mode=mode, codes_file=codes_file, audio_file=audio_file, prompt_length_in_seconds=prompt_length_in_seconds))  
                     emsgOperation = f"setting total_length"
