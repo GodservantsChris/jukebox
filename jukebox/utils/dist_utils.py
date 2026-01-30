@@ -61,6 +61,7 @@ def setup_dist_from_mpi(backend="nccl", verbose=False) -> dict:
                 torch.cuda.set_device(local_rank)
             else:
                 device = torch.device("cpu")
+        return mpi_rank, local_rank, device
     except NameError as e:
         raise Exception(f'NameError Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e))
     except Exception as e:
