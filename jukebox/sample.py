@@ -88,11 +88,11 @@ def sample_level(zs, labels, sampling_kwargs, level, prior, total_length, hop_le
     return zs
 
 # Sample multiple levels
-def _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps):
+def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
     alignments = None
     for level in reversed(sample_levels):
         prior = priors[level]
-        prior.cuda()
+        prior.to(device)
         empty_cache()
 
         # Set correct total_length, hop_length, labels and sampling_kwargs for level
@@ -121,29 +121,29 @@ def _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps):
     return zs
 
 # Generate ancestral samples given a list of artists and genres
-def ancestral_sample(labels, sampling_kwargs, priors, hps):
+def ancestral_sample(device, labels, sampling_kwargs, priors, hps):
     sample_levels = list(range(len(priors)))
-    zs = [t.zeros(hps.n_samples,0,dtype=t.long, device='cuda') for _ in range(len(priors))]
-    zs = _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps)
+    zs = [t.zeros(hps.n_samples,0,dtype=t.long, device=device) for _ in range(len(priors))]
+    zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
     return zs
 
 # Continue ancestral sampling from previously saved codes
-def continue_sample(zs, labels, sampling_kwargs, priors, hps):
+def continue_sample(device, zs, labels, sampling_kwargs, priors, hps):
     sample_levels = list(range(len(priors)))
-    zs = _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps)
+    zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
     return zs
 
 # Upsample given already generated upper-level codes
-def upsample(zs, labels, sampling_kwargs, priors, hps):
+def upsample(device, zs, labels, sampling_kwargs, priors, hps):
     sample_levels = list(range(len(priors) - 1))
-    zs = _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps)
+    zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
     return zs
 
 # Prompt the model with raw audio input (dimension: NTC) and generate continuations
-def primed_sample(x, labels, sampling_kwargs, priors, hps):
+def primed_sample(device, x, labels, sampling_kwargs, priors, hps):
     sample_levels = list(range(len(priors)))
     zs = priors[-1].encode(x, start_level=0, end_level=len(priors), bs_chunks=x.shape[0])
-    zs = _sample(zs, labels, sampling_kwargs, priors, sample_levels, hps)
+    zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
     return zs
 
 # Load `duration` seconds of the given audio files to use as prompts
@@ -211,7 +211,7 @@ def save_samples(model, device, hps, sample_hps, metas):
             emsgOperation = f"determining which sample_hps mode is in play"
             if sample_hps.mode == 'ancestral':
                 emsgOperation = f"sampling for ancestral mode"
-                ancestral_sample(labels, sampling_kwargs, priors, hps)
+                ancestral_sample(device, labels, sampling_kwargs, priors, hps)
             elif sample_hps.mode in ['continue', 'upsample']:
                 emsgOperation = f"asserting that sample_hps.codes_file is set while in continue or upsample mode"
                 assert sample_hps.codes_file is not None
@@ -227,10 +227,10 @@ def save_samples(model, device, hps, sample_hps, metas):
                 zs = load_codes(sample_hps.codes_file, duration, priors, hps)
                 if sample_hps.mode == 'continue':
                     emsgOperation = f"sampling for continue mode"
-                    continue_sample(zs, labels, sampling_kwargs, priors, hps)
+                    continue_sample(device, zs, labels, sampling_kwargs, priors, hps)
                 elif sample_hps.mode == 'upsample':
                     emsgOperation = f"sampling for upsample mode"
-                    upsample(zs, labels, sampling_kwargs, priors, hps)
+                    upsample(device, zs, labels, sampling_kwargs, priors, hps)
             elif sample_hps.mode == 'primed':
                 emsgOperation = f"asserting that sample_hps.audio_file is set"
                 assert sample_hps.audio_file is not None
@@ -245,7 +245,7 @@ def save_samples(model, device, hps, sample_hps, metas):
                 emsgOperation = f"loading prompts in primed mode"
                 x = load_prompts(audio_files, duration, hps)
                 emsgOperation = f"sampling for primed mode"
-                primed_sample(x, labels, sampling_kwargs, priors, hps)
+                primed_sample(device, x, labels, sampling_kwargs, priors, hps)
             else:
                 raise ValueError(f'Unknown sample mode {sample_hps.mode}.')
         else: raise NameError
