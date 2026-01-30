@@ -99,7 +99,7 @@ def restore_opt(opt, shd, checkpoint_path):
     if "step" in checkpoint:
         shd.step(checkpoint['step'])
 
-def make_vqvae(hps, device='cuda'):
+def make_vqvae(hps, device):
     vqvae = None    
     emsgContext = f"make_models.make_vqvae(hps, device=" + str(device) + f")"
     emsgOperation = f""
@@ -298,7 +298,7 @@ def save_outputs(model, device, hps):
         prime_bins = 80
 
     rng = t.random.manual_seed(0)
-    x = 2 * t.rand((1, n_ctx * 8 * 4 * 4, 1), generator=rng, dtype=t.float).cuda() - 1.0  # -1 to 1
+    x = 2 * t.rand((1, n_ctx * 8 * 4 * 4, 1), generator=rng, dtype=t.float).to(device) - 1.0  # -1 to 1
     lyric_tokens = t.randint(0, prime_bins, (1, n_tokens), generator=rng, dtype=t.long).view(-1).numpy()
     artist_id = 10
     genre_ids = [1]
@@ -320,9 +320,9 @@ def save_outputs(model, device, hps):
             print(f"Skipping level {level}")
             continue
         prior = priors[level]
-        prior.cuda()
+        prior.to(device)
         x_in = x[:, :n_ctx * 8 * (4 ** level)]
-        y_in = t.from_numpy(prior.labeller.get_y_from_ids(artist_id, genre_ids, lyric_tokens, total_length, offset)).view(1, -1).cuda().long()
+        y_in = t.from_numpy(prior.labeller.get_y_from_ids(artist_id, genre_ids, lyric_tokens, total_length, offset)).view(1, -1).to(device).long()
         x_out, _, metrics = prior(x_in, y_in, fp16=hps.fp16, get_preds=True, decode=True)
         preds = metrics['preds']
         data[level] = dict(x=x_in, y=y_in, x_out=x_out, preds=preds)
