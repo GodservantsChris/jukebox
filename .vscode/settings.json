@@ -1,6 +1,5 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:conda",
-    "python-envs.defaultPackageManager": "ms-python.python:conda",
-    "python-envs.pythonProjects": [],
-    "python.defaultInterpreterPath": "C:\\Users\\godse\\Miniconda3\\envs\\jukebox\\python.exe"
+    "python-envs.defaultEnvManager": "ms-python.python:venv",
+    "python-envs.defaultPackageManager": "ms-python.python:pip",
+    "python-envs.pythonProjects": []
 }

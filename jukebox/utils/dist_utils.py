@@ -54,19 +54,16 @@ def setup_dist_from_mpi(backend="nccl", verbose=False) -> dict:
             mpi_rank, local_rank, device = _setup_dist_from_mpi(backend, n_attempts, verbose)
         else:
             use_cuda = torch.cuda.is_available()
-            print(emsgContext + f'; Using cuda {use_cuda}')
+            print(emsgContext + f'; Torch.distributed.is_available is False; Torch.cuda_is_available is {use_cuda}')
             if use_cuda:
                 device = torch.device("cuda", local_rank)
                 torch.cuda.set_device(local_rank)
             else:
                 device = torch.device("cpu")
     except NameError as e:
-        print(f'NameError Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e))
+        raise Exception(f'NameError Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e))
     except Exception as e:
-        print(f'Exception while ' + emsgOperation + f' in ' + emsgContext + f': ' + repr(e))
-    finally:
-        print(f'Completed: ' + emsgContext + f'; mpi_rank =  ' + str(mpi_rank) + f'; local_rank =  ' + str(local_rank) + f'; device =  ' + str(device))
-        return mpi_rank, local_rank, device
+        raise Exception(f'Exception while ' + emsgOperation + f' in ' + emsgContext + f': ' + repr(e))
 
 # Distributed device initialization
 def _setup_dist_from_mpi(backend: str, n_attempts: int, verbose: bool) -> dict:
