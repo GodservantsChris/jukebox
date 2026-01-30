@@ -8,8 +8,9 @@ from jukebox.utils.io import get_duration_sec, load_audio
 from jukebox.data.labels import Labeller
 
 class FilesAudioDataset(Dataset):
-    def __init__(self, hps):
+    def __init__(self, device, hps):
         super().__init__()
+        self.device=device
         self.sr = hps.sr
         self.channels = hps.channels
         self.min_duration = hps.min_duration or math.ceil(hps.sample_length / hps.sr)
@@ -44,7 +45,7 @@ class FilesAudioDataset(Dataset):
         self.filter(files, durations)
 
         if self.labels:
-            self.labeller = Labeller(hps.max_bow_genre_size, hps.n_tokens, self.sample_length, v3=hps.labels_v3)
+            self.labeller = Labeller(self.device, hps.max_bow_genre_size, hps.n_tokens, self.sample_length, v3=hps.labels_v3)
 
     def get_index_offset(self, item):
         # For a given dataset item and shift, return song index and offset within song

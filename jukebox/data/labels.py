@@ -25,7 +25,7 @@ class EmptyLabeller():
         info = dict(artist="n/a", genre="n/a", lyrics=[], full_tokens=[])
         return dict(y=y, info=info)
 
-    def get_batch_labels(self, metas, device='cpu'):
+    def get_batch_labels(self, metas, device):
         ys, infos = [], []
         for meta in metas:
             label = self.get_label()
@@ -39,7 +39,8 @@ class EmptyLabeller():
         return dict(y=ys, info=infos)
 
 class Labeller():
-    def __init__(self, max_genre_words, n_tokens, sample_length, v3=False):
+    def __init__(self, device, max_genre_words, n_tokens, sample_length, v3=False):
+        self.device = device
         self.ag_processor = ArtistGenreProcessor(v3)
         self.text_processor = TextProcessor(v3)
         self.n_tokens = n_tokens
@@ -73,7 +74,7 @@ class Labeller():
         assert y.shape == self.label_shape, f"Expected {self.label_shape}, got {y.shape}"
         return y
 
-    def get_batch_labels(self, metas, device='cpu'):
+    def get_batch_labels(self, metas, device):
         ys, infos = [], []
         for meta in metas:
             label = self.get_label(**meta)
@@ -99,7 +100,7 @@ class Labeller():
                 tokens, indices = get_relevant_lyric_tokens(full_tokens, self.n_tokens, total_length, offset, duration)
                 tokens_list.append(tokens)
                 indices_list.append(indices)
-            ys[:, -self.n_tokens:] = t.tensor(tokens_list, dtype=t.long, device='cuda')
+            ys[:, -self.n_tokens:] = t.tensor(tokens_list, dtype=t.long, device=self.device)
             return indices_list
         else:
             return None
@@ -116,11 +117,18 @@ class Labeller():
 
 
 if __name__ == '__main__':
-    labeller = Labeller(5, 512, 8192*8*4*4, v3=False)
+    local_rank = 0
+    device=None
+    if t.cuda.is_available():
+        device = t.device("cuda", local_rank)
+        t.cuda.set_device(local_rank)
+    else:
+        device = t.device("cpu")
+    labeller = Labeller(device, 5, 512, 8192*8*4*4, v3=False)
     label = labeller.get_label("Alan Jackson", "Country Rock", "old town road", 4*60*44100, 0)
     print(label, labeller.describe_label(label['y']))
 
-    labeller = Labeller(1, 384, 6144*8*4*4, v3=True)
+    labeller = Labeller(device, 1, 384, 6144*8*4*4, v3=True)
     label = labeller.get_label("Alan Jackson", "Country Rock", "old town road", 4*60*44100, 0)
     print(label, labeller.describe_label(label['y']))
 

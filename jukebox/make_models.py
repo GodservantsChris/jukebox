@@ -181,7 +181,7 @@ def make_vqvae(hps, device):
         emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
         raise Exception(emsg)
 
-def make_prior(hps, vqvae, device='cuda'):
+def make_prior(hps, vqvae, device):
     from jukebox.prior.prior import SimplePrior
 
     prior_kwargs = dict(input_shape=(hps.n_ctx,), bins=vqvae.l_bins,
@@ -223,7 +223,7 @@ def make_prior(hps, vqvae, device='cuda'):
     rescale = lambda z_shape: (z_shape[0]*hps.n_ctx//vqvae.z_shapes[hps.level][0],)
     z_shapes = [rescale(z_shape) for z_shape in vqvae.z_shapes]
 
-    prior = SimplePrior(z_shapes=z_shapes,
+    prior = SimplePrior(device=device, z_shapes=z_shapes,
                         l_bins=vqvae.l_bins,
                         encoder=vqvae.encode,
                         decoder=vqvae.decode,
@@ -275,7 +275,7 @@ def make_model(model, device, hps, levels=None):
                 emsgOperation = f"setting levels"            
                 levels = range(len(priors))
             emsgOperation = f"making priors"            
-            priors = [make_prior(setup_hparams(priors[level], dict()), vqvae, 'cpu') for level in levels]
+            priors = [make_prior(setup_hparams(priors[level], dict()), vqvae, device) for level in levels]
             emsgOperation = f"returning with vqvae and priors"            
             return vqvae, priors
         else: raise NameError
