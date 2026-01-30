@@ -89,43 +89,89 @@ def sample_level(zs, labels, sampling_kwargs, level, prior, total_length, hop_le
 
 # Sample multiple levels
 def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
-    alignments = None
-    for level in reversed(sample_levels):
-        prior = priors[level]
-        prior.to(device)
-        empty_cache()
+    emsgContext = f"sample.py._sample()"
+    emsgOperation = f""
+    try:        
+        alignments = None
+        emsgOperation = f"iterating sample_levels in reverse"
+        for level in reversed(sample_levels):
+            emsgOperation = f"setting prior at level=" + str(level)
+            prior = priors[level]
+            emsgOperation = f"setting prior to device at level=" + str(level)
+            prior.to(device)
+            emsgOperation = f"emptying cache first time at level=" + str(level)
+            empty_cache()
 
-        # Set correct total_length, hop_length, labels and sampling_kwargs for level
-        assert hps.sample_length % prior.raw_to_tokens == 0, f"Expected sample_length {hps.sample_length} to be multiple of {prior.raw_to_tokens}"
-        total_length = hps.sample_length//prior.raw_to_tokens
-        hop_length = int(hps.hop_fraction[level]*prior.n_ctx)
-        zs = sample_level(zs, labels[level], sampling_kwargs[level], level, prior, total_length, hop_length, hps)
+            # Set correct total_length, hop_length, labels and sampling_kwargs for level
+            emsgOperation = f"asserting sample_length condition at level=" + str(level)
+            assert hps.sample_length % prior.raw_to_tokens == 0, f"Expected sample_length {hps.sample_length} to be multiple of {prior.raw_to_tokens}"
+            emsgOperation = f"setting total_length at level=" + str(level)
+            total_length = hps.sample_length//prior.raw_to_tokens
+            emsgOperation = f"setting hop_length at level=" + str(level)
+            hop_length = int(hps.hop_fraction[level]*prior.n_ctx)
+            emsgOperation = f"setting zs at level=" + str(level)
+            zs = sample_level(zs, labels[level], sampling_kwargs[level], level, prior, total_length, hop_length, hps)
+            emsgOperation = f"calling prior.cpu() at level=" + str(level)
+            prior.cpu()
+            emsgOperation = f"emptying cache second time at level=" + str(level)
+            empty_cache()
 
-        prior.cpu()
-        empty_cache()
+            # Decode sample
+            emsgOperation = f"decoding prior at level=" + str(level)
+            x = prior.decode(zs[level:], start_level=level, bs_chunks=zs[level].shape[0])
 
-        # Decode sample
-        x = prior.decode(zs[level:], start_level=level, bs_chunks=zs[level].shape[0])
-
-        if dist.get_world_size() > 1:
-            logdir = f"{hps.name}_rank_{dist.get_rank()}/level_{level}"
-        else:
-            logdir = f"{hps.name}/level_{level}"
-        if not os.path.exists(logdir):
-            os.makedirs(logdir)
-        t.save(dict(zs=zs, labels=labels, sampling_kwargs=sampling_kwargs, x=x), f"{logdir}/data.pth.tar")
-        save_wav(logdir, x, hps.sr)
-        if alignments is None and priors[-1] is not None and priors[-1].n_tokens > 0 and not isinstance(priors[-1].labeller, EmptyLabeller):
-            alignments = get_alignment(x, zs, labels[-1], priors[-1], sampling_kwargs[-1]['fp16'], hps)
-        save_html(logdir, x, zs, labels[-1], alignments, hps)
-    return zs
+            emsgOperation = f"determining if dist.get_world_size() > 1 at level=" + str(level)
+            if dist.get_world_size() > 1:
+                emsgOperation = f"setting logdir when dist.get_world_size() > 1 at level=" + str(level)
+                logdir = f"{hps.name}_rank_{dist.get_rank()}/level_{level}"
+            else:
+                emsgOperation = f"setting logdir when dist.get_world_size() <= 1 at level=" + str(level)
+                logdir = f"{hps.name}/level_{level}"
+            emsgOperation = f"determinint if logdir does not exist at level=" + str(level)
+            if not os.path.exists(logdir):
+                emsgOperation = f"making logdir at level=" + str(level)
+                os.makedirs(logdir)
+            emsgOperation = f"calliing t.save() at level=" + str(level)
+            t.save(dict(zs=zs, labels=labels, sampling_kwargs=sampling_kwargs, x=x), f"{logdir}/data.pth.tar")
+            emsgOperation = f"calling save_wav() at level=" + str(level)
+            save_wav(logdir, x, hps.sr)
+            emsgOperation = f"determining is alignments should be gotten at level=" + str(level)
+            if alignments is None and priors[-1] is not None and priors[-1].n_tokens > 0 and not isinstance(priors[-1].labeller, EmptyLabeller):
+                emsgOperation = f"getting alignments at level=" + str(level)
+                alignments = get_alignment(x, zs, labels[-1], priors[-1], sampling_kwargs[-1]['fp16'], hps)
+            emsgOperation = f"saving html at level=" + str(level)
+            save_html(logdir, x, zs, labels[-1], alignments, hps)
+        return zs
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        print(emsg)
+    except Exception as e:
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        print(emsg)
+    finally:
+        print(f'Completed: ' + emsgContext)
 
 # Generate ancestral samples given a list of artists and genres
 def ancestral_sample(device, labels, sampling_kwargs, priors, hps):
-    sample_levels = list(range(len(priors)))
-    zs = [t.zeros(hps.n_samples,0,dtype=t.long, device=device) for _ in range(len(priors))]
-    zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
-    return zs
+    emsgContext = f"sample.py.ancestral_sample()"
+    emsgOperation = f""
+    try:        
+        emsgOperation = f"setting sample_levels"
+        sample_levels = list(range(len(priors)))
+        emsgOperation = f"setting zs"
+        zs = [t.zeros(hps.n_samples,0,dtype=t.long, device=device) for _ in range(len(priors))]
+        emsgOperation = f"calling _sample()"
+        zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
+        emsgOperation = f"returning zs"
+        return zs
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        print(emsg)
+    except Exception as e:
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        print(emsg)
+    finally:
+        print(f'Completed: ' + emsgContext)
 
 # Continue ancestral sampling from previously saved codes
 def continue_sample(device, zs, labels, sampling_kwargs, priors, hps):
@@ -192,7 +238,7 @@ def save_samples(model, device, hps, sample_hps, metas):
             emsgOperation = f"setting metas to last item in metas"
             metas = metas[:hps.n_samples]
             emsgOperation = f"getting labels"
-            labels = [prior.labeller.get_batch_labels(metas, 'cuda') for prior in priors]
+            labels = [prior.labeller.get_batch_labels(metas, device) for prior in priors]
             emsgLoop = f"iterating labels"
             for label in labels:
                 emsgOperation = emsgLoop + f"; asserting that the shape of the y label equals hps.n_samples"
