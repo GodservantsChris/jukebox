@@ -36,7 +36,7 @@ class BottleneckBlock(nn.Module):
             self.init = False
             self.k_sum = None
             self.k_elem = None
-            emsgOperation = f"calling register_buffer('k', t.zeros(self.k_bins, self.emb_width).cuda()) on self"
+            emsgOperation = f"calling register_buffer('k', t.zeros(self.k_bins, self.emb_width).to(self.device)) on self"
             self.register_buffer('k', t.zeros(self.k_bins, self.emb_width).to(self.device))
 
         except NameError as e:
@@ -284,7 +284,7 @@ class NoBottleneck(nn.Module):
         return zs
 
     def forward(self, xs):
-        zero = t.zeros(()).cuda()
+        zero = t.zeros(()).to(self.device)
         commit_losses = [zero for _ in range(self.levels)]
         metrics = [dict(entropy=zero, usage=zero, used_curr=zero, pn=zero, dk=zero) for _ in range(self.levels)]
         return xs, xs, commit_losses, metrics
