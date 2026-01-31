@@ -78,6 +78,7 @@ def sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps):
             z_samples = []
             emsgOperation = f"iterating lists" 
             for z_i, z_conds_i, y_i in zip(z_list, z_conds_list, y_list):
+                # sampling
                 emsgOperation = f"calling prior.sample() to set z_samples_i" 
                 z_samples_i = prior.sample(n_samples=z_i.shape[0], z=z_i, z_conds=z_conds_i, y=y_i, **sampling_kwargs)
                 emsgOperation = f"appending z_samples_i to z_samples" 
@@ -92,6 +93,7 @@ def sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps):
             zs[level] = t.cat([zs[level], z_new], dim=1)
             emsgOperation = f"returning zs in final statement" 
             return zs
+        
         else: raise NameError(f"zs is empty.")
     
     except NameError as e:
@@ -140,11 +142,12 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
         for level in reversed(sample_levels):
             emsgOperation = f"setting prior at level=" + str(level)
             prior = priors[level]
-            emsgOperation = f"setting prior to device at level=" + str(level)
-            prior.to(device)
+            #
+            emsgOperation = f"calling prior.cuda() at level=" + str(level)
+            prior.cuda()
             emsgOperation = f"emptying cache first time at level=" + str(level)
             empty_cache()
-
+            #
             # Set correct total_length, hop_length, labels and sampling_kwargs for level
             emsgOperation = f"asserting sample_length condition at level=" + str(level)
             assert hps.sample_length % prior.raw_to_tokens == 0, f"Expected sample_length {hps.sample_length} to be multiple of {prior.raw_to_tokens}"
@@ -152,8 +155,11 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
             total_length = hps.sample_length//prior.raw_to_tokens
             emsgOperation = f"setting hop_length at level=" + str(level)
             hop_length = int(hps.hop_fraction[level]*prior.n_ctx)
-            emsgOperation = f"setting zs at level=" + str(level)
+            #
+            # Sample the level
+            emsgOperation = f"calling sample_level to set zs at level=" + str(level)
             zs = sample_level(zs, labels[level], sampling_kwargs[level], level, prior, total_length, hop_length, hps)
+            #
             emsgOperation = f"calling prior.cpu() at level=" + str(level)
             prior.cpu()
             emsgOperation = f"emptying cache second time at level=" + str(level)
@@ -174,6 +180,7 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
                 if not os.path.exists(logdir):
                     emsgOperation = f"making logdir at level=" + str(level)
                     os.makedirs(logdir)
+                #
                 emsgOperation = f"calliing t.save() at level=" + str(level)
                 t.save(dict(zs=zs, labels=labels, sampling_kwargs=sampling_kwargs, x=x), f"{logdir}/data.pth.tar")
                 emsgOperation = f"calling save_wav() at level=" + str(level)
