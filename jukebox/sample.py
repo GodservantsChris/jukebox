@@ -29,63 +29,106 @@ def sample_partial_window(zs, labels, sampling_kwargs, level, prior, tokens_to_s
 
 # Sample a single window of length=n_ctx at position=start on level=level
 def sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps):
-    n_samples = hps.n_samples
-    n_ctx = prior.n_ctx
-    end = start + n_ctx
-
-    # get z already sampled at current level
-    z = zs[level][:,start:end]
-
-    if 'sample_tokens' in sampling_kwargs:
-        # Support sampling a window shorter than n_ctx
-        sample_tokens = sampling_kwargs['sample_tokens']
-    else:
-        sample_tokens = (end - start)
-    conditioning_tokens, new_tokens = z.shape[1], sample_tokens - z.shape[1]
-
-    print_once(f"Sampling {sample_tokens} tokens for [{start},{start+sample_tokens}]. Conditioning on {conditioning_tokens} tokens")
-
-    if new_tokens <= 0:
-        # Nothing new to sample
-        return zs
+    emsgContext = f"sample.py.sample_single_window(level=" + str(level) + f";start=" + str(start) + f";)"
+    emsgOperation = f""
+    try: 
+        if zs: 
+            emsgOperation = f"setting n samples from hps"      
+            n_samples = hps.n_samples
+            emsgOperation = f"setting n_ctx from hps"      
+            n_ctx = prior.n_ctx
+            emsgOperation = f"calculating end"      
+            end = start + n_ctx
+            # 
+            emsgOperation = f"getting z already sampled at current level"      
+            z = zs[level][:,start:end]
+            emsgOperation = f"determining if sample_tokens is in the sampling kwargs" 
+            if 'sample_tokens' in sampling_kwargs:
+                # Support sampling a window shorter than n_ctx
+                emsgOperation = f"setting sample_tokens' from sampling_kwargs" 
+                sample_tokens = sampling_kwargs['sample_tokens']
+            else:
+                emsgOperation = f"etting sample_tokens' from end-start" 
+                sample_tokens = (end - start)
+            emsgOperation = f"setting conditioing and new tokens" 
+            conditioning_tokens, new_tokens = z.shape[1], sample_tokens - z.shape[1]
+            emsgOperation = f"printing message" 
+            print_once(f"Sampling {sample_tokens} tokens for [{start},{start+sample_tokens}]. Conditioning on {conditioning_tokens} tokens")
+            emsgOperation = f"checking new_tokens" 
+            if new_tokens <= 0:
+                emsgOperation = f"returning zs when there's nothing new to sample" 
+                return zs
+            emsgOperation = f"getting z_conds from level above"         
+            z_conds = prior.get_z_conds(zs, start, end)
+            emsgOperation = f"setting y offset, sample_length and lyrics tokens" 
+            y = prior.get_y(labels, start)
+            emsgOperation = f"emptying cache" 
+            empty_cache()
+            emsgOperation = f"setting max_batch_size" 
+            max_batch_size = sampling_kwargs['max_batch_size']
+            emsgOperation = f"removing max_batch_size from sampling_kwargs"
+            del sampling_kwargs['max_batch_size']
+            emsgOperation = f"setting z_listy" 
+            z_list = split_batch(z, n_samples, max_batch_size)
+            emsgOperation = f"setting z_conds_list" 
+            z_conds_list = split_batch(z_conds, n_samples, max_batch_size)
+            emsgOperation = f"setting y_list" 
+            y_list = split_batch(y, n_samples, max_batch_size)
+            emsgOperation = f"initializing z_samples" 
+            z_samples = []
+            emsgOperation = f"iterating lists" 
+            for z_i, z_conds_i, y_i in zip(z_list, z_conds_list, y_list):
+                emsgOperation = f"calling prior.sample() to set z_samples_i" 
+                z_samples_i = prior.sample(n_samples=z_i.shape[0], z=z_i, z_conds=z_conds_i, y=y_i, **sampling_kwargs)
+                emsgOperation = f"appending z_samples_i to z_samples" 
+                z_samples.append(z_samples_i)
+            emsgOperation = f"calling t.cat(...) to set z" 
+            z = t.cat(z_samples, dim=0)
+            emsgOperation = f"setting sampling_kwargs[max_batch_size]" 
+            sampling_kwargs['max_batch_size'] = max_batch_size
+            emsgOperation = f"updating z with new sample" 
+            z_new = z[:,-new_tokens:]
+            emsgOperation = f"calling t.cat() to set zs[level] where level = " + str(level) 
+            zs[level] = t.cat([zs[level], z_new], dim=1)
+            emsgOperation = f"returning zs in final statement" 
+            return zs
+        else: raise NameError(f"zs is empty.")
     
-    # get z_conds from level above
-    z_conds = prior.get_z_conds(zs, start, end)
-
-    # set y offset, sample_length and lyrics tokens
-    y = prior.get_y(labels, start)
-
-    empty_cache()
-
-    max_batch_size = sampling_kwargs['max_batch_size']
-    del sampling_kwargs['max_batch_size']
-
-
-    z_list = split_batch(z, n_samples, max_batch_size)
-    z_conds_list = split_batch(z_conds, n_samples, max_batch_size)
-    y_list = split_batch(y, n_samples, max_batch_size)
-    z_samples = []
-    for z_i, z_conds_i, y_i in zip(z_list, z_conds_list, y_list):
-        z_samples_i = prior.sample(n_samples=z_i.shape[0], z=z_i, z_conds=z_conds_i, y=y_i, **sampling_kwargs)
-        z_samples.append(z_samples_i)
-    z = t.cat(z_samples, dim=0)
-
-    sampling_kwargs['max_batch_size'] = max_batch_size
-
-    # Update z with new sample
-    z_new = z[:,-new_tokens:]
-    zs[level] = t.cat([zs[level], z_new], dim=1)
-    return zs
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        print(emsg)
+    except Exception as e:
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        print(emsg)
+    finally:
+        print(f'Completed: ' + emsgContext)
 
 # Sample total_length tokens at level=level with hop_length=hop_length
 def sample_level(zs, labels, sampling_kwargs, level, prior, total_length, hop_length, hps):
-    print_once(f"Sampling level {level}")
-    if total_length >= prior.n_ctx:
-        for start in get_starts(total_length, prior.n_ctx, hop_length):
-            zs = sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps)
-    else:
-        zs = sample_partial_window(zs, labels, sampling_kwargs, level, prior, total_length, hps)
-    return zs
+    emsgContext = f"sample.py.sample_level()"
+    emsgOperation = f""
+    try:        
+        emsgOperation = f"calling print_once"
+        print_once(f"Sampling level {level}")
+        emsgOperation = f"determining total_lenth condition"
+        if total_length >= prior.n_ctx:
+            emsgOperation = f"iterating starts returned from get_starts()"
+            for start in get_starts(total_length, prior.n_ctx, hop_length):
+                emsgOperation = f"calling sample_single_window() to set zs for start = " + str(start)
+                zs = sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps)
+        else:
+            emsgOperation = f"calling sample_partial_window()"
+            zs = sample_partial_window(zs, labels, sampling_kwargs, level, prior, total_length, hps)
+        emsgOperation = f"returning zs"
+        return zs
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        print(emsg)
+    except Exception as e:
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        print(emsg)
+    finally:
+        print(f'Completed: ' + emsgContext)
 
 # Sample multiple levels
 def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
@@ -115,32 +158,34 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
             prior.cpu()
             emsgOperation = f"emptying cache second time at level=" + str(level)
             empty_cache()
+            if zs:
+                # Decode sample
+                emsgOperation = f"decoding prior at level=" + str(level)
+                x = prior.decode(zs[level:], start_level=level, bs_chunks=zs[level].shape[0])
 
-            # Decode sample
-            emsgOperation = f"decoding prior at level=" + str(level)
-            x = prior.decode(zs[level:], start_level=level, bs_chunks=zs[level].shape[0])
-
-            emsgOperation = f"determining if dist.get_world_size() > 1 at level=" + str(level)
-            if dist.get_world_size() > 1:
-                emsgOperation = f"setting logdir when dist.get_world_size() > 1 at level=" + str(level)
-                logdir = f"{hps.name}_rank_{dist.get_rank()}/level_{level}"
+                emsgOperation = f"determining if dist.get_world_size() > 1 at level=" + str(level)
+                if dist.get_world_size() > 1:
+                    emsgOperation = f"setting logdir when dist.get_world_size() > 1 at level=" + str(level)
+                    logdir = f"{hps.name}_rank_{dist.get_rank()}/level_{level}"
+                else:
+                    emsgOperation = f"setting logdir when dist.get_world_size() <= 1 at level=" + str(level)
+                    logdir = f"{hps.name}/level_{level}"
+                emsgOperation = f"determinint if logdir does not exist at level=" + str(level)
+                if not os.path.exists(logdir):
+                    emsgOperation = f"making logdir at level=" + str(level)
+                    os.makedirs(logdir)
+                emsgOperation = f"calliing t.save() at level=" + str(level)
+                t.save(dict(zs=zs, labels=labels, sampling_kwargs=sampling_kwargs, x=x), f"{logdir}/data.pth.tar")
+                emsgOperation = f"calling save_wav() at level=" + str(level)
+                save_wav(logdir, x, hps.sr)
+                emsgOperation = f"determining is alignments should be gotten at level=" + str(level)
+                if alignments is None and priors[-1] is not None and priors[-1].n_tokens > 0 and not isinstance(priors[-1].labeller, EmptyLabeller):
+                    emsgOperation = f"getting alignments at level=" + str(level)
+                    alignments = get_alignment(x, zs, labels[-1], priors[-1], sampling_kwargs[-1]['fp16'], hps)
+                emsgOperation = f"saving html at level=" + str(level)
+                save_html(logdir, x, zs, labels[-1], alignments, hps)
             else:
-                emsgOperation = f"setting logdir when dist.get_world_size() <= 1 at level=" + str(level)
-                logdir = f"{hps.name}/level_{level}"
-            emsgOperation = f"determinint if logdir does not exist at level=" + str(level)
-            if not os.path.exists(logdir):
-                emsgOperation = f"making logdir at level=" + str(level)
-                os.makedirs(logdir)
-            emsgOperation = f"calliing t.save() at level=" + str(level)
-            t.save(dict(zs=zs, labels=labels, sampling_kwargs=sampling_kwargs, x=x), f"{logdir}/data.pth.tar")
-            emsgOperation = f"calling save_wav() at level=" + str(level)
-            save_wav(logdir, x, hps.sr)
-            emsgOperation = f"determining is alignments should be gotten at level=" + str(level)
-            if alignments is None and priors[-1] is not None and priors[-1].n_tokens > 0 and not isinstance(priors[-1].labeller, EmptyLabeller):
-                emsgOperation = f"getting alignments at level=" + str(level)
-                alignments = get_alignment(x, zs, labels[-1], priors[-1], sampling_kwargs[-1]['fp16'], hps)
-            emsgOperation = f"saving html at level=" + str(level)
-            save_html(logdir, x, zs, labels[-1], alignments, hps)
+                raise NameError(f"sz is empty.")
         return zs
     except NameError as e:
         emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
