@@ -195,13 +195,11 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
                 raise NameError(f"sz is empty.")
         return zs
     except NameError as e:
-        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
-        print(emsg)
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e) 
+        raise Exception(emsg)
     except Exception as e:
         emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
-        print(emsg)
-    finally:
-        print(f'Completed: ' + emsgContext)
+        raise Exception(emsg)
 
 # Generate ancestral samples given a list of artists and genres
 def ancestral_sample(device, labels, sampling_kwargs, priors, hps):
@@ -218,12 +216,10 @@ def ancestral_sample(device, labels, sampling_kwargs, priors, hps):
         return zs
     except NameError as e:
         emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
-        print(emsg)
+        raise Exception(emsg)
     except Exception as e:
         emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
-        print(emsg)
-    finally:
-        print(f'Completed: ' + emsgContext)
+        raise Exception(emsg)
 
 # Continue ancestral sampling from previously saved codes
 def continue_sample(device, zs, labels, sampling_kwargs, priors, hps):
