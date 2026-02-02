@@ -127,7 +127,7 @@ def make_vqvae(hps, device):
                     hps.sample_length = (hps.sample_length_in_seconds * hps.sr // top_raw_to_tokens) * top_raw_to_tokens
                     print(f"Setting sample length to {hps.sample_length} (i.e. {hps.sample_length/hps.sr} seconds) to be multiple of {top_raw_to_tokens}")
                     emsgOperation = f"creating a VQVAE object"            
-                    vqvae = VQVAE(device=device, input_shape=(hps.sample_length,1), levels=hps.levels, downs_t=hps.downs_t, strides_t=hps.strides_t,
+                    vqvae = VQVAE(input_shape=(hps.sample_length,1), levels=hps.levels, downs_t=hps.downs_t, strides_t=hps.strides_t,
                                 emb_width=hps.emb_width, l_bins=hps.l_bins,
                                 mu=hps.l_mu, commit=hps.commit,
                                 spectral=hps.spectral, multispectral=hps.multispectral,
@@ -223,7 +223,7 @@ def make_prior(hps, vqvae, device):
     rescale = lambda z_shape: (z_shape[0]*hps.n_ctx//vqvae.z_shapes[hps.level][0],)
     z_shapes = [rescale(z_shape) for z_shape in vqvae.z_shapes]
 
-    prior = SimplePrior(device=device, z_shapes=z_shapes,
+    prior = SimplePrior(z_shapes=z_shapes,
                         l_bins=vqvae.l_bins,
                         encoder=vqvae.encode,
                         decoder=vqvae.decode,
@@ -261,7 +261,7 @@ def make_prior(hps, vqvae, device):
 def make_model(model, device, hps, levels=None):
     emsgContext = f"make_models.make_model(model, device, hps, levels=None)"
     emsgOperation = f""
-    try:        
+    try:          
         emsgOperation = f"validating model"
         if model:
             emsgOperation = f"getting vqvae and priors from MODELS collection for model: " + str(model)            
@@ -274,7 +274,7 @@ def make_model(model, device, hps, levels=None):
             if levels is None:
                 emsgOperation = f"setting levels"            
                 levels = range(len(priors))
-            emsgOperation = f"making priors"            
+            emsgOperation = f"making priors"  
             priors = [make_prior(setup_hparams(priors[level], dict()), vqvae, device) for level in levels]
             emsgOperation = f"returning with vqvae and priors"            
             return vqvae, priors

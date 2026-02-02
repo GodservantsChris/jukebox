@@ -40,18 +40,17 @@ def _loss_fn(loss_fn, x_target, x_pred, hps):
         assert False, f"Unknown loss_fn {loss_fn}"
 
 class VQVAE(nn.Module):
-    def __init__(self, device, input_shape, levels, downs_t, strides_t,
+    def __init__(self, input_shape, levels, downs_t, strides_t,
                  emb_width, l_bins, mu, commit, spectral, multispectral,
                  multipliers=None, use_bottleneck=True,
                  **block_kwargs):
-        emsgContext = f"make_models.VQVAE.__init__(device=" + str(device) + ")"
+        emsgContext = f"make_models.VQVAE.__init__()"
         emsgOperation = f""
         try:
             emsgOperation = f"calling super().__init__()"
             super().__init__()
 
             emsgOperation = f"setting first properties on self"
-            self.device = device
             self.sample_length = input_shape[0]
             x_shape, x_channels = input_shape[:-1], input_shape[-1]
             self.x_shape = x_shape
@@ -89,6 +88,7 @@ class VQVAE(nn.Module):
                 self.encoders.append(encoder(level))
                 self.decoders.append(decoder(level))
 
+            device = self.device()
             if use_bottleneck:
                 emsgOperation = f"setting bottleneck on self as Bottleneck object"
                 self.bottleneck = Bottleneck(device, l_bins, emb_width, mu, levels)
@@ -114,6 +114,13 @@ class VQVAE(nn.Module):
             emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
             raise Exception(emsg)
 
+    def device(self):
+        try:
+            return next(self.parameters()).device
+        except StopIteration:
+            # No parameters — fall back to buffers
+            return next(self.buffers()).device
+    
     def preprocess(self, x):
         # x: NTC [-1,1] -> NCT [-1,1]
         assert len(x.shape) == 3
@@ -171,7 +178,7 @@ class VQVAE(nn.Module):
         return zs
 
     def sample(self, n_samples):
-        zs = [t.randint(0, self.l_bins, size=(n_samples, *z_shape), device=self.device) for z_shape in self.z_shapes]
+        zs = [t.randint(0, self.l_bins, size=(n_samples, *z_shape), device=self.device()) for z_shape in self.z_shapes]
         return self.decode(zs)
 
     def forward(self, x, hps, loss_fn='l1'):
