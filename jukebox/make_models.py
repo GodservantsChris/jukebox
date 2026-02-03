@@ -266,7 +266,7 @@ def make_model(model, device, hps, levels=None):
         if model:
             emsgOperation = f"getting vqvae and priors from MODELS collection for model: " + str(model)            
             vqvae, *priors = MODELS[model]
-            emsgOperation = f"makiing vqvae object"            
+            emsgOperation = f"making vqvae object"            
             vqvae = make_vqvae(setup_hparams(vqvae, dict(sample_length=hps.get('sample_length', 0), sample_length_in_seconds=hps.get('sample_length_in_seconds', 0))), device)
             emsgOperation = f"setting hps.sample_length from vqvae.sample_length"            
             hps.sample_length = vqvae.sample_length
