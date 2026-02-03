@@ -98,12 +98,10 @@ def sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps):
     
     except NameError as e:
         emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
-        print(emsg)
+        raise Exception(emsg)
     except Exception as e:
         emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
-        print(emsg)
-    finally:
-        print(f'Completed: ' + emsgContext)
+        raise Exception(emsg)
 
 # Sample total_length tokens at level=level with hop_length=hop_length
 def sample_level(zs, labels, sampling_kwargs, level, prior, total_length, hop_length, hps):
@@ -125,12 +123,10 @@ def sample_level(zs, labels, sampling_kwargs, level, prior, total_length, hop_le
         return zs
     except NameError as e:
         emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
-        print(emsg)
+        raise Exception(emsg)
     except Exception as e:
         emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
-        print(emsg)
-    finally:
-        print(f'Completed: ' + emsgContext)
+        raise Exception(emsg)
 
 # Sample multiple levels
 def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
