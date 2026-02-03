@@ -28,6 +28,7 @@ def load_checkpoint(path):
     try:        
         emsgOperation = f"validating path"
         if path:
+            print(f"*****")
             restore = path
             emsgOperation = f"determining if restore starts with " + str(REMOTE_PREFIX)
             if restore.startswith(REMOTE_PREFIX):
@@ -36,13 +37,14 @@ def load_checkpoint(path):
                 local_path = os.path.join(os.path.expanduser("~/.cache"), remote_path[len(REMOTE_PREFIX):])
                 emsgOperation = f"determining if the rank is a multiple of 8"
                 if dist.get_rank() % 8 == 0:
+                    print("The rank is a multiple of 8.")
                     emsgOperation = f"determining the local directory"
                     local_dir = os.path.dirname(local_path)
                     emsgOperation = f"checking for existence of " + str(local_dir)
                     if not os.path.exists(local_dir):
                         emsgOperation = f"creating " + str(local_dir)
                         os.makedirs(local_dir)
-                    print("The rank is a multiple of 8 - check for existence of the local path: " + str(local_path))
+                    print("Check for existence of the local path: " + str(local_path))
                     emsgOperation = f"checking for existence of " + str(local_path)
                     if not os.path.exists(local_path):
                         print("The local path does not exist.  Downloading to local_path: " + str(local_path))
@@ -52,7 +54,6 @@ def load_checkpoint(path):
                 restore = local_path
             emsgOperation = f"calling dist.barrier()"
             dist.barrier()
-            print(f"*****")
             print(f"Loading from restore: " + str(restore))
             emsgOperation = f"loading from restore: " + str(restore)
             checkpoint = t.load(restore, map_location=t.device('cpu'))
