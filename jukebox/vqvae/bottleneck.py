@@ -5,14 +5,13 @@ import torch.nn.functional as F
 import jukebox.utils.dist_adapter as dist
 
 class BottleneckBlock(nn.Module):
-    def __init__(self, device, k_bins, emb_width, mu):
+    def __init__(self, k_bins, emb_width, mu):
         emsgContext = f"bottleneck.py.BottleneckBlock.__init__()"
         emsgOperation = f""
         try:        
             emsgOperation = f"calling super().__init__()"
             super().__init__()
             emsgOperation = f"setting first properties on self"
-            self.device = device
             self.k_bins = k_bins
             self.emb_width = emb_width
             self.mu = mu
@@ -28,6 +27,17 @@ class BottleneckBlock(nn.Module):
             emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
             raise Exception(emsg)       
 
+    def device(self):
+        try:
+            return next(self.parameters()).device            
+        except StopIteration:
+            try:
+                return next(self.buffers()).device
+            except StopIteration:
+                device =f"cpu"
+                if t.cuda.is_available() : device=f"cuda"
+                return device
+    
     def reset_k(self):
         emsgContext = f"bottleneck.py.BottleneckBlock.reset_k()"
         emsgOperation = f""
@@ -36,8 +46,10 @@ class BottleneckBlock(nn.Module):
             self.init = False
             self.k_sum = None
             self.k_elem = None
-            emsgOperation = f"calling register_buffer('k', t.zeros(self.k_bins, self.emb_width).to(self.device)) on self"
-            self.register_buffer('k', t.zeros(self.k_bins, self.emb_width).to(self.device))
+            emsgOperation = f"getting the device on self"
+            device = self.device()
+            emsgOperation = f"calling register_buffer('k', t.zeros(self.k_bins, self.emb_width).to(self.device())) on self"
+            self.register_buffer('k', t.zeros(self.k_bins, self.emb_width).to(device))
 
         except NameError as e:
             emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
@@ -207,18 +219,16 @@ class BottleneckBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
-    def __init__(self, device, l_bins, emb_width, mu, levels):
+    def __init__(self, l_bins, emb_width, mu, levels):
         emsgContext = f"bottleneck.py.Bottleneck.__init__()"
         emsgOperation = f""
         try:        
             emsgOperation = f"calling super().__init__()"
             super().__init__()
-            emsg = f"setting device property on self from device arg"
-            self.device = device
             emsgOperation = f"setting levels on self from levels arg"
             self.levels = levels
             emsgOperation = f"creating level_block function using lambda to create BottleneckBlock object"
-            level_block = lambda level: BottleneckBlock(device, l_bins, emb_width, mu)
+            level_block = lambda level: BottleneckBlock(l_bins, emb_width, mu)
             emsgOperation = f"setting level_blocks on self from nn.ModuleList()"
             self.level_blocks = nn.ModuleList()
             emsgOperation = f"iterating self.levels to append level_block(level) to self_level_blocks"
@@ -235,6 +245,13 @@ class Bottleneck(nn.Module):
             emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
             raise Exception(emsg)
 
+    def device(self):
+        try:
+            return next(self.parameters()).device
+        except StopIteration:
+            # No parameters — fall back to buffers
+            return next(self.buffers()).device
+    
     def encode(self, xs):
         zs = [level_block.encode(x) for (level_block, x) in zip(self.level_blocks, xs)]
         return zs
@@ -267,14 +284,20 @@ class NoBottleneckBlock(nn.Module):
         pass
 
 class NoBottleneck(nn.Module):
-    def __init__(self, device, levels):
+    def __init__(self, levels):
         super().__init__()
-        self.device = device
         self.level_blocks = nn.ModuleList()
         self.levels = levels
         for level in range(levels):
             self.level_blocks.append(NoBottleneckBlock())
 
+    def device(self):
+        try:
+            return next(self.parameters()).device
+        except StopIteration:
+            # No parameters — fall back to buffers
+            return next(self.buffers()).device
+    
     def encode(self, xs):
         return xs
 
@@ -284,7 +307,7 @@ class NoBottleneck(nn.Module):
         return zs
 
     def forward(self, xs):
-        zero = t.zeros(()).to(self.device)
+        zero = t.zeros(()).to(self.device())
         commit_losses = [zero for _ in range(self.levels)]
         metrics = [dict(entropy=zero, usage=zero, used_curr=zero, pn=zero, dk=zero) for _ in range(self.levels)]
         return xs, xs, commit_losses, metrics
