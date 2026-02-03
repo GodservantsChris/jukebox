@@ -139,8 +139,6 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
             emsgOperation = f"setting prior at level=" + str(level)
             prior = priors[level]
             #
-            emsgOperation = f"calling prior.cuda() at level=" + str(level)
-            prior.cuda()
             emsgOperation = f"emptying cache first time at level=" + str(level)
             empty_cache()
             #
@@ -156,8 +154,6 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
             emsgOperation = f"calling sample_level to set zs at level=" + str(level)
             zs = sample_level(zs, labels[level], sampling_kwargs[level], level, prior, total_length, hop_length, hps)
             #
-            emsgOperation = f"calling prior.cpu() at level=" + str(level)
-            prior.cpu()
             emsgOperation = f"emptying cache second time at level=" + str(level)
             empty_cache()
             if zs:
