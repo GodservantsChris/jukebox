@@ -118,8 +118,12 @@ class VQVAE(nn.Module):
         try:
             return next(self.parameters()).device
         except StopIteration:
-            # No parameters — fall back to buffers
-            return next(self.buffers()).device
+            try:
+                return next(self.buffers()).device
+            except StopIteration:
+                device =f"cpu"
+                if t.cuda.is_available() : device=f"cuda"
+                return device
     
     def preprocess(self, x):
         # x: NTC [-1,1] -> NCT [-1,1]

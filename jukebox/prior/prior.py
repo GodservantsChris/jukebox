@@ -143,8 +143,12 @@ class SimplePrior(nn.Module):
         try:
             return next(self.parameters()).device
         except StopIteration:
-            # No parameters — fall back to buffers
-            return next(self.buffers()).device
+            try:
+                return next(self.buffers()).device
+            except StopIteration:
+                device =f"cpu"
+                if t.cuda.is_available() : device=f"cuda"
+                return device
     
     def get_y(self, labels, start, get_indices=False):
         if isinstance(self.labeller, EmptyLabeller):
