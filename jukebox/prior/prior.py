@@ -245,15 +245,32 @@ class SimplePrior(nn.Module):
         return x_out
 
     def get_cond(self, z_conds, y):
-        if y is not None:
-            assert y.shape[1] == 4 + self.y_emb.max_bow_genre_size + self.n_tokens, f"Expected {4} + {self.y_emb.max_bow_genre_size} + {self.n_tokens}, got {y.shape[1]}"
-            n_labels = y.shape[1] - self.n_tokens
-            y, prime = y[:,:n_labels], y[:,n_labels:]
-        else:
-            y, prime = None, None
-        y_cond, y_pos = self.y_emb(y) if self.y_cond else (None, None)
-        x_cond = self.x_emb(z_conds) if self.x_cond else y_pos
-        return x_cond, y_cond, prime
+        emsgContext = f"prior.py.get_cond(()"
+        emsgOperation = f""
+        try:
+            if y is not None:
+                emsgOperation = f"checking asserts"
+                assert y.shape[1] == 4 + self.y_emb.max_bow_genre_size + self.n_tokens, f"Expected {4} + {self.y_emb.max_bow_genre_size} + {self.n_tokens}, got {y.shape[1]}"
+                emsgOperation = f"setting n_labels"
+                n_labels = y.shape[1] - self.n_tokens
+                emsgOperation = f"setting y, prime when y is not None"
+                y, prime = y[:,:n_labels], y[:,n_labels:]
+            else:
+                emsgOperation = f"setting y, prime when y is None"
+                y, prime = None, None
+            emsgOperation = f"calling y_emb(...) to set y_cond, y_pos"
+            y_cond, y_pos = self.y_emb(y) if self.y_cond else (None, None)
+            emsgOperation = f"setting x_cond"
+            x_cond = self.x_emb(z_conds) if self.x_cond else y_pos
+            emsgOperation = f"returning x_cond, y_cond, prime"
+            return x_cond, y_cond, prime
+        
+        except NameError as e:
+            emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except Exception as e:
+            emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
 
     def sample(self, n_samples, z=None, z_conds=None, y=None, fp16=False, temp=1.0, top_k=0, top_p=0.0,
                chunk_size=None, sample_tokens=None):
