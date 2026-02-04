@@ -19,6 +19,17 @@ class Conditioner(nn.Module):
         self.cond = DecoderConvBock(self.width, self.width, down_t, stride_t, **block_kwargs, zero_out=zero_out, res_scale=res_scale)
         self.ln = LayerNorm(self.width)
 
+    def device(self):
+        try:
+            return next(self.parameters()).device            
+        except StopIteration:
+            try:
+                return next(self.buffers()).device
+            except StopIteration:
+                device =f"cpu"
+                if t.cuda.is_available() : device=f"cuda"
+                return device
+            
     def preprocess(self, x):
         x = x.permute(0,2,1) # NTC -> NCT
         return x
@@ -61,9 +72,22 @@ class SimpleEmbedding(nn.Module):
         self.emb = nn.Embedding(bins, out_width)
         nn.init.normal_(self.emb.weight, std=0.01 * init_scale)
 
+    def device(self):
+        try:
+            return next(self.parameters()).device            
+        except StopIteration:
+            try:
+                return next(self.buffers()).device
+            except StopIteration:
+                device =f"cpu"
+                if t.cuda.is_available() : device=f"cuda"
+                return device
+    
     def forward(self, y):
         assert len(y.shape) == 2, f"Expected shape with 2 dims, got {y.shape}"
-        assert isinstance(y, t.cuda.LongTensor), f"Expected dtype {t.cuda.LongTensor}, got {y.dtype}"
+        dtype_expected = t.int64
+        if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
+        assert (y.dtype == dtype_expected), f"Expected dtype {dtype_expected}, got {y.dtype}"
         assert (0 <= y).all() and (y < self.bins).all(), f"Bins {self.bins}, got label {y}"
         return self.emb(y)
 
@@ -85,6 +109,17 @@ class RangeEmbedding(nn.Module):
         self.pos_min, self.pos_max = range
         self.clamp = clamp
 
+    def device(self):
+        try:
+            return next(self.parameters()).device            
+        except StopIteration:
+            try:
+                return next(self.buffers()).device
+            except StopIteration:
+                device =f"cpu"
+                if t.cuda.is_available() : device=f"cuda"
+                return device
+            
     def forward(self, pos_start, pos_end=None):
         # Check if [pos_start,pos_end] in [pos_min, pos_max)
         assert len(pos_start.shape) == 2, f"Expected shape with 2 dims, got {pos_start.shape}"
@@ -100,7 +135,7 @@ class RangeEmbedding(nn.Module):
         n_time = self.n_time
         if n_time != 1:
             assert pos_end is not None
-            interpolation  = (t.arange(0, n_time, dtype=t.float, device='cuda').view(1,n_time)/n_time)
+            interpolation  = (t.arange(0, n_time, dtype=t.float, device=self.device).view(1,n_time)/n_time)
             position = pos_start + (pos_end - pos_start)*interpolation
         else:
             position = pos_start
@@ -131,10 +166,23 @@ class LabelConditioner(nn.Module):
             self.absolute_pos_emb = RangeEmbedding(n_time, t_bins, absolute_pos_range, out_width, init_scale)
             self.relative_pos_emb = RangeEmbedding(n_time, t_bins, relative_pos_range, out_width, init_scale, clamp=True)
 
+    def device(self):
+        try:
+            return next(self.parameters()).device            
+        except StopIteration:
+            try:
+                return next(self.buffers()).device
+            except StopIteration:
+                device =f"cpu"
+                if t.cuda.is_available() : device=f"cuda"
+                return device
+    
     def forward(self, y):
         assert len(y.shape) == 2, f"Expected shape with 2 dims, got {y.shape}"
         assert y.shape[-1] == 4 + self.max_bow_genre_size, f"Expected shape (N,{4 + self.max_bow_genre_size}), got {y.shape}"
-        assert isinstance(y, t.cuda.LongTensor), f"Expected dtype {t.cuda.LongTensor}, got {y.dtype}"
+        dtype_expected = t.int64
+        if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
+        assert (y.dtype == dtype_expected), f"Expected dtype {dtype_expected}, got {y.dtype}"
         N = y.shape[0]
         total_length, offset, length, artist, genre = y[:,0:1], y[:,1:2], y[:,2:3], y[:,3:4], y[:,4:]
 
