@@ -344,6 +344,9 @@ class SimplePrior(nn.Module):
                 # Currently x_cond only uses immediately above layer
                 emsgOperation = f"calling get_cond(...)"
                 x_cond, y_cond, prime = self.get_cond(z_conds, y)
+                # CJM
+                emsg = (emsgContext + f" while " + emsgOperation + f"; y.type() = " + str(y.type()))
+                raise NameError(emsg)
                 if self.single_enc_dec:
                     if no_past_context:
                         emsgOperation = f"calling prior_preprocess(...) when no past context"
@@ -363,7 +366,7 @@ class SimplePrior(nn.Module):
                     emsgOperation = f"calling get_encoder_kv(...)"
                     encoder_kv = self.get_encoder_kv(prime, fp16=fp16, sample=True)
                     if no_past_context:
-                        emsgOperation = f"calling prior.sample(...)"
+                        emsgOperation = f"calling prior.sample(...)"                        
                         z = self.prior.sample(n_samples, x_cond, y_cond, encoder_kv, fp16=fp16, temp=temp, top_k=top_k,
                                             top_p=top_p, sample_tokens=sample_tokens)
                     else:
