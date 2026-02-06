@@ -272,16 +272,12 @@ class LabelConditioner(nn.Module):
         emsgContext = f"conditioners.py.LabelConditioner.forward()"
         emsgOperation = f""
         try: 
-            emsgOperation = f"asserting to validate y"       
-            # CJM
-            emsg = (emsgContext + f" while " + emsgOperation + f"; y.type() = " + str(y.type()))
-            raise NameError(emsg)
-                
             assert len(y.shape) == 2, f"Expected shape with 2 dims, got {y.shape}"
             assert y.shape[-1] == 4 + self.max_bow_genre_size, f"Expected shape (N,{4 + self.max_bow_genre_size}), got {y.shape}"
             type_expected = t.LongTensor
             if t.cuda.is_available() : type_expected = t.cuda.LongTensor
-            assert isinstance(y, type_expected), f"Expected type for y: {type_expected}, got: " + str(y.type())
+            emsgOperation = f"asserting to validate y"       
+            assert y.type() == type_expected, f"Expected type for y: {type_expected}, got: " + str(y.type())
             N = y.shape[0]
             total_length, offset, length, artist, genre = y[:,0:1], y[:,1:2], y[:,2:3], y[:,3:4], y[:,4:]
 
