@@ -295,6 +295,10 @@ class SimplePrior(nn.Module):
         emsgContext = f"prior.py.get_cond(()"
         emsgOperation = f""
         try:
+            # CJM
+            emsg = (emsgContext + f" while " + emsgOperation + f"; y.type() = " + str(y.type()))
+            raise NameError(emsg)
+                
             if y is not None:
                 emsgOperation = f"checking asserts"
                 assert y.shape[1] == 4 + self.y_emb.max_bow_genre_size + self.n_tokens, f"Expected {4} + {self.y_emb.max_bow_genre_size} + {self.n_tokens}, got {y.shape[1]}"
@@ -341,9 +345,6 @@ class SimplePrior(nn.Module):
 
             emsgOperation = f"with t.no_grad())"
             with t.no_grad():
-                # CJM
-                emsg = (emsgContext + f" while " + emsgOperation + f"; y.type() = " + str(y.type()))
-                raise NameError(emsg)
                 # Currently x_cond only uses immediately above layer
                 emsgOperation = f"calling get_cond(...)"
                 x_cond, y_cond, prime = self.get_cond(z_conds, y)
