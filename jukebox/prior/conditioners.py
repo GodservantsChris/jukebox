@@ -271,7 +271,12 @@ class LabelConditioner(nn.Module):
     def forward(self, y):
         emsgContext = f"conditioners.py.LabelConditioner.forward()"
         emsgOperation = f""
-        try:        
+        try: 
+            emsgOperation = f"asserting to validate y"       
+            # CJM
+            emsg = (emsgContext + f" while " + emsgOperation + f"; y.type() = " + str(y.type()))
+            raise NameError(emsg)
+                
             assert len(y.shape) == 2, f"Expected shape with 2 dims, got {y.shape}"
             assert y.shape[-1] == 4 + self.max_bow_genre_size, f"Expected shape (N,{4 + self.max_bow_genre_size}), got {y.shape}"
             type_expected = t.LongTensor
