@@ -139,6 +139,9 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
             emsgOperation = f"setting prior at level=" + str(level)
             prior = priors[level]
             #
+            emsgOperation = f"calling prior.to(device) at level=" + str(level)
+            prior.to(device)
+            #
             emsgOperation = f"emptying cache first time at level=" + str(level)
             empty_cache()
             #
@@ -153,6 +156,9 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
             # Sample the level
             emsgOperation = f"calling sample_level to set zs at level=" + str(level)
             zs = sample_level(zs, labels[level], sampling_kwargs[level], level, prior, total_length, hop_length, hps)
+            #
+            emsgOperation = f"calling prior.cpu() at level=" + str(level)
+            prior.cpu()
             #
             emsgOperation = f"emptying cache second time at level=" + str(level)
             empty_cache()
@@ -233,7 +239,8 @@ def primed_sample(device, x, labels, sampling_kwargs, priors, hps):
     return zs
 
 # Load `duration` seconds of the given audio files to use as prompts
-def load_prompts(audio_files, duration, hps):
+def load_prompts(audio_files, duration, hps, device):
+    print(f"load_prompts(); device = ") + str(device)
     xs = []
     for audio_file in audio_files:
         x = load_audio(audio_file, sr=hps.sr, duration=duration, offset=0.0, mono=True)
@@ -243,13 +250,15 @@ def load_prompts(audio_files, duration, hps):
         xs.extend(xs)
     xs = xs[:hps.n_samples]
     x = t.stack([t.from_numpy(x) for x in xs])
-    x = x.to('cuda', non_blocking=True)
+    x = x.to(device, non_blocking=True)
     return x
 
 # Load codes from previous sampling run
 def load_codes(codes_file, duration, priors, hps):
+    device_cur = priors[-1].device()
+    print(f"load_codes(); device_cur = ") + str(device_cur)
     data = t.load(codes_file, map_location='cpu')
-    zs = [z.cuda() for z in data['zs']]
+    zs = [z.to(device_cur) for z in data['zs']]
     assert zs[-1].shape[0] == hps.n_samples, f"Expected bs = {hps.n_samples}, got {zs[-1].shape[0]}"
     del data
     if duration is not None:
@@ -329,7 +338,7 @@ def save_samples(model, device, hps, sample_hps, metas):
                 emsgOperation = f"calculating duration in primed mode"
                 duration = (int(sample_hps.prompt_length_in_seconds * hps.sr) // top_raw_to_tokens) * top_raw_to_tokens
                 emsgOperation = f"loading prompts in primed mode"
-                x = load_prompts(audio_files, duration, hps)
+                x = load_prompts(audio_files, duration, hps, device)
                 emsgOperation = f"sampling for primed mode"
                 primed_sample(device, x, labels, sampling_kwargs, priors, hps)
             else:
