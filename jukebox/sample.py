@@ -80,7 +80,8 @@ def sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps):
             for z_i, z_conds_i, y_i in zip(z_list, z_conds_list, y_list):
                 # sampling
                 emsgOperation = f"calling prior.sample() to set z_samples_i" 
-                print(emsgContext + f" while " + emsgOperation + f"; y_i = " + str(y_i))
+                emsg = (emsgContext + f" while " + emsgOperation + f"; y_i.type() = " + str(y_i.type()))
+                raise NameError(emsg)
                 z_samples_i = prior.sample(n_samples=z_i.shape[0], z=z_i, z_conds=z_conds_i, y=y_i, **sampling_kwargs)
                 emsgOperation = f"appending z_samples_i to z_samples" 
                 z_samples.append(z_samples_i)
