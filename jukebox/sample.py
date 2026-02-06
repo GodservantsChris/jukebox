@@ -221,22 +221,61 @@ def ancestral_sample(device, labels, sampling_kwargs, priors, hps):
 
 # Continue ancestral sampling from previously saved codes
 def continue_sample(device, zs, labels, sampling_kwargs, priors, hps):
-    sample_levels = list(range(len(priors)))
-    zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
-    return zs
+    emsgContext = f"sample.py.continue_sample()"
+    emsgOperation = f""
+    try:        
+        sample_levels = list(range(len(priors)))
+        zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
+        return zs
+
+    except AssertionError as e:
+        emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+    except Exception as e:
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)    
 
 # Upsample given already generated upper-level codes
 def upsample(device, zs, labels, sampling_kwargs, priors, hps):
-    sample_levels = list(range(len(priors) - 1))
-    zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
-    return zs
+    emsgContext = f"sample.py.upsample()"
+    emsgOperation = f""
+    try:        
+        sample_levels = list(range(len(priors) - 1))
+        zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
+        return zs
+
+    except AssertionError as e:
+        emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+    except Exception as e:
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
 
 # Prompt the model with raw audio input (dimension: NTC) and generate continuations
 def primed_sample(device, x, labels, sampling_kwargs, priors, hps):
-    sample_levels = list(range(len(priors)))
-    zs = priors[-1].encode(x, start_level=0, end_level=len(priors), bs_chunks=x.shape[0])
-    zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
-    return zs
+    emsgContext = f"sample.py.primed_sample()"
+    emsgOperation = f""
+    try:        
+        sample_levels = list(range(len(priors)))
+        zs = priors[-1].encode(x, start_level=0, end_level=len(priors), bs_chunks=x.shape[0])
+        zs = _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps)
+        return zs
+
+    except AssertionError as e:
+        emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+    except Exception as e:
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)  
 
 # Load `duration` seconds of the given audio files to use as prompts
 def load_prompts(audio_files, duration, hps, device):
@@ -320,6 +359,7 @@ def save_samples(model, device, hps, sample_hps, metas):
                     duration = None
                 emsgOperation = f"loading codes"
                 zs = load_codes(sample_hps.codes_file, duration, priors, hps)
+                # sample
                 if sample_hps.mode == 'continue':
                     emsgOperation = f"sampling for continue mode"
                     continue_sample(device, zs, labels, sampling_kwargs, priors, hps)
