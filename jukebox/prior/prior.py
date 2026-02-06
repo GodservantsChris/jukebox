@@ -305,10 +305,11 @@ class SimplePrior(nn.Module):
             else:
                 emsgOperation = f"setting y, prime when y is None"
                 y, prime = None, None
-            emsgOperation = f"setting the device to y"
+            emsgOperation = f"setting the device on y"
             device_cur = self.device()
             print(emsgContext + f"; device_cur = " + str(device_cur))
             y.to(device_cur)
+            print(emsgContext + f" - after setting device on y; y.dtype = " + str(y.dtype))
             emsgOperation = f"calling y_emb(...) to set y_cond, y_pos"
             y_cond, y_pos = self.y_emb(y) if self.y_cond else (None, None)
             emsgOperation = f"setting x_cond"
