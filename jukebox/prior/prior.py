@@ -341,12 +341,12 @@ class SimplePrior(nn.Module):
 
             emsgOperation = f"with t.no_grad())"
             with t.no_grad():
-                # Currently x_cond only uses immediately above layer
-                emsgOperation = f"calling get_cond(...)"
-                x_cond, y_cond, prime = self.get_cond(z_conds, y)
                 # CJM
                 emsg = (emsgContext + f" while " + emsgOperation + f"; y.type() = " + str(y.type()))
                 raise NameError(emsg)
+                # Currently x_cond only uses immediately above layer
+                emsgOperation = f"calling get_cond(...)"
+                x_cond, y_cond, prime = self.get_cond(z_conds, y)
                 if self.single_enc_dec:
                     if no_past_context:
                         emsgOperation = f"calling prior_preprocess(...) when no past context"
