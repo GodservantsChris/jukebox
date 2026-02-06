@@ -179,41 +179,88 @@ class SimplePrior(nn.Module):
         return z_conds
 
     def prior_preprocess(self, xs, conds):
-        N = xs[0].shape[0]
-        for i in range(len(xs)):
-            x, shape, dims = xs[i], self.prior_shapes[i], self.prior_dims[i]
-            bins, bins_shift = int(self.prior_bins[i]), int(self.prior_bins_shift[i])
-            assert isinstance(x, t.cuda.LongTensor), x
-            assert (0 <= x).all() and (x < bins).all()
-            #assert_shape(x, (N, *shape))
-            xs[i] = (xs[i] + bins_shift).view(N, -1)
-
-        for i in range(len(conds)):
-            cond, shape, dims = conds[i], self.prior_shapes[i], self.prior_dims[i]
-            if cond is not None:
-                assert_shape(cond, (N, dims, self.prior_width))
-            else:
-                conds[i] = t.zeros((N, dims, self.prior_width), dtype=t.float, device='cuda')
-
-        return t.cat(xs, dim=1), t.cat(conds, dim=1)
+        emsgContext = f"prior.py.prior_preprocess()"
+        emsgOperation = f""
+        try:
+            emsgOperation = f"getting xs[0].shape[0] to set N"
+            N = xs[0].shape[0]
+            emsgOperation = f"setting dtype_expected"
+            dtype_expected = t.int64
+            if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
+            emsgOperation = f"iterating xs"
+            for i in range(len(xs)):
+                emsgOperation = f"getting xs[i], self.prior_shapes[i], self.prior_dims[i] to set variables when i = " + str(i) + "as xs are iterated"
+                x, shape, dims = xs[i], self.prior_shapes[i], self.prior_dims[i]
+                emsgOperation = f"getting int(self.prior_bins[i]), int(self.prior_bins_shift[i]) to set variables when i = " + str(i) + "as xs are iterated"
+                bins, bins_shift = int(self.prior_bins[i]), int(self.prior_bins_shift[i])
+                emsgOperation = f"asserting that x is an appropriate dtype when i = " + str(i) + "as xs are iterated"
+                assert (x.dtype == dtype_expected),  f"Expected dtype {dtype_expected}, got {x.dtype}"
+                emsgOperation = f"validating x when i = " + str(i) + "as xs are iterated"
+                assert (0 <= x).all() and (x < bins).all(), f"x is invalid"
+                emsgOperation = f"calculating xs[i] when i = " + str(i) + "as xs are iterated"
+                xs[i] = (xs[i] + bins_shift).view(N, -1)
+            emsgOperation = f""
+            for i in range(len(conds)):
+                emsgOperation = f"getting cond, shape and dims when i = " + str(i) + "as conds are iterated"
+                cond, shape, dims = conds[i], self.prior_shapes[i], self.prior_dims[i]
+                if cond is not None:
+                    emsgOperation = f"asserting shape of cond when cond it not None and i = " + str(i) + "as conds are iterated"
+                    assert_shape(cond, (N, dims, self.prior_width))
+                else:
+                    emsgOperation = f"setting conds[i] when cond is None and i = " + str(i) + "as conds are iterated"
+                    conds[i] = t.zeros((N, dims, self.prior_width), dtype=t.float, device=self.device())
+            emsgOperation = f"returning t.cat(xs, dim=1), t.cat(conds, dim=1)"
+            return t.cat(xs, dim=1), t.cat(conds, dim=1)
+            
+        except AssertionError as e:
+            emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except NameError as e:
+            emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except Exception as e:
+            emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
 
     def prior_postprocess(self, z):
-        N = z.shape[0]
-        dims = (self.prior_dims[0], z.shape[1] - self.prior_dims[0])
-        # xs = list(t.split(z, self.prior_dims, dim=1))
-        xs = list(t.split(z, dims, dim=1))
-
-        for i in range(len(xs)):
-            # x, shape, dims, bins, bins_shift = xs[i], self.prior_shapes[i], self.prior_dims[i], self.prior_bins[i], self.prior_bins_shift[i]
-            # assert_shape(x, (N, dims))
-            shape = self.prior_shapes[i]
-            bins, bins_shift = int(self.prior_bins[i]), int(self.prior_bins_shift[i])
-            # xs[i] = (xs[i] - bins_shift).view(N, *shape) #view(N, -1, *shape[1:])
-            xs[i] = (xs[i] - bins_shift).view(N, -1, *shape[1:])
-            xs[i] = t.clamp(xs[i], min=0)  # If not masking loss, model may have generated lyric/midi tokens which are now shifted <0 by bin_shift
-            assert (xs[i] < bins).all(), f'rank: {dist.get_rank()}, bins: {bins}, dims {dims}, shape {shape}, prior_shape {self.prior_shapes}, bins_shift {bins_shift}, xs[i]: {xs[i]}'
-
-        return xs[-1]
+        
+        emsgContext = f"prior.py.prior_postprocess()"
+        emsgOperation = f""
+        try:
+            emsgOperation = f"getting z.shape[0] to set N"
+            N = z.shape[0]
+            emsgOperation = f"calculating (self.prior_dims[0], z.shape[1] - self.prior_dims[0]) to set dims"
+            dims = (self.prior_dims[0], z.shape[1] - self.prior_dims[0])
+            # xs = list(t.split(z, self.prior_dims, dim=1))
+            emsgOperation = f"splitting t into a list to set xs"
+            xs = list(t.split(z, dims, dim=1))
+            emsgOperation = f"iterating xs"
+            for i in range(len(xs)):
+                # x, shape, dims, bins, bins_shift = xs[i], self.prior_shapes[i], self.prior_dims[i], self.prior_bins[i], self.prior_bins_shift[i]
+                # assert_shape(x, (N, dims))
+                emsgOperation = f"getting prior_shapes[i] to set shape when i = " + str(i) + "as xs are iterated"
+                shape = self.prior_shapes[i]
+                emsgOperation = f"getting prior_bins[i] and prior_bins_shift[i] to set bins, bins_shifts when i = " + str(i) + "as xs are iterated"
+                bins, bins_shift = int(self.prior_bins[i]), int(self.prior_bins_shift[i])
+                # xs[i] = (xs[i] - bins_shift).view(N, *shape) #view(N, -1, *shape[1:])
+                emsgOperation = f"setting xs[i] initially when i = " + str(i) + "as xs are iterated"
+                xs[i] = (xs[i] - bins_shift).view(N, -1, *shape[1:])
+                emsgOperation = f"re-setting xs[i] when i = " + str(i) + "as xs are iterated"
+                xs[i] = t.clamp(xs[i], min=0)  # If not masking loss, model may have generated lyric/midi tokens which are now shifted <0 by bin_shift
+                emsgOperation = f"asserting to validate xs[i] when i = " + str(i) + "as xs are iterated"
+                assert (xs[i] < bins).all(), f'rank: {dist.get_rank()}, bins: {bins}, dims {dims}, shape {shape}, prior_shape {self.prior_shapes}, bins_shift {bins_shift}, xs[i]: {xs[i]}'
+            emsgOperation = f"returning  xs[-1]"
+            return xs[-1]
+        
+        except AssertionError as e:
+            emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except NameError as e:
+            emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except Exception as e:
+            emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
 
     def x_emb(self, z_conds):
         z_conds = z_conds[:self.cond_level - self.level]

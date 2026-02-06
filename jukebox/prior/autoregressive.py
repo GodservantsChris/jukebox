@@ -98,6 +98,17 @@ class ConditionalAutoregressive2D(nn.Module):
                 self.x_out.weight = self.x_emb.weight
             self.loss = t.nn.CrossEntropyLoss()
 
+    def device(self):
+        try:
+            return next(self.parameters()).device            
+        except StopIteration:
+            try:
+                return next(self.buffers()).device
+            except StopIteration:
+                device =f"cpu"
+                if t.cuda.is_available() : device=f"cuda"
+                return device
+            
     def preprocess(self, x):
         # Input: x is NHWC and uint8. Converted to NL and long
         # Can include stuff like bitpacking, reordering here.
@@ -120,7 +131,9 @@ class ConditionalAutoregressive2D(nn.Module):
             x = self.preprocess(x)
 
         N, D = x.shape
-        assert isinstance(x, t.cuda.LongTensor)
+        dtype_expected = t.int64
+        if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
+        assert (x.dtype == dtype_expected),  f"Expected dtype {dtype_expected}, got {x.dtype}"
         assert (0 <= x).all() and (x < self.bins).all()
 
         if self.y_cond:
@@ -178,13 +191,15 @@ class ConditionalAutoregressive2D(nn.Module):
         N, D = n_samples, self.input_dims
         if sample_t == 0:
             # Fill in start token
-            x = t.empty(n_samples, 1, self.width).cuda()
+            x = t.empty(n_samples, 1, self.width).to(self.device())
             if self.y_cond:
                 x[:, 0] = y_cond.view(N, self.width)
             else:
                 x[:, 0] = self.start_token
         else:
-            assert isinstance(x, t.cuda.LongTensor)
+            dtype_expected = t.int64
+            if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
+            assert (x.dtype == dtype_expected),  f"Expected dtype {dtype_expected}, got {x.dtype}"
             assert (0 <= x).all() and (x < self.bins).all()
             x = self.x_emb(x)
         assert x.shape == (n_samples, 1, self.width)
@@ -213,7 +228,7 @@ class ConditionalAutoregressive2D(nn.Module):
             assert x_cond.shape == (N, D, self.width) or x_cond.shape == (N, 1, self.width), f"Got {x_cond.shape}, expected ({N}, {D}/{1}, {self.width})"
         else:
             assert x_cond is None
-            x_cond = t.zeros((N, 1, self.width), dtype=t.float).cuda()
+            x_cond = t.zeros((N, 1, self.width), dtype=t.float).to(self.device())
 
         with t.no_grad():
             xs, x = [], None
@@ -250,122 +265,206 @@ class ConditionalAutoregressive2D(nn.Module):
 
     def primed_sample(self, n_samples, x, x_cond=None, y_cond=None, encoder_kv=None, fp16=False, temp=1.0, top_k=0,
                       top_p=0.0, get_preds=False, chunk_size=None, sample_tokens=None):
-        assert self.training == False
+        emsgContext = f"autoregressive.primed_sample()"
+        emsgOperation = f""
+        try: 
+            emsgOperation = f"asserting if self.training is False" 
+            assert self.training == False, f"self.training != False"
+            if sample_tokens is None: 
+                emsgOperation = f"setting sample_tokens from self.input_dims"
+                sample_tokens=self.input_dims
+            # Preprocess.
+            with t.no_grad():
+                emsgOperation = f"calling preprocess() to set x"
+                x = self.preprocess(x)
+            emsgOperation = f"setting dtype_expected"
+            dtype_expected = t.int64
+            if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
+            emsgOperation = f"asserting x.dtype is as expected"
+            assert (x.dtype == dtype_expected),  f"Expected dtype {dtype_expected}, got {x.dtype}"
+            emsgOperation = f"asserting to validate x"
+            assert (0 <= x).all() and (x < self.bins).all()
+            emsgOperation = f"asserting to validate x.shape[0]"
+            assert x.shape[0] == n_samples, f"x.shape[0] != n_samples"
+            emsgOperation = f"splitting x to create xs"
+            xs = t.split(x, 1, dim=1)
+            emsgOperation = f"re-setting xs as a list"
+            xs = list(xs)
+            emsgOperation = f"asserting to validate xs"
+            assert len(xs) < sample_tokens, f"len(xs) >= sample_tokens"
 
-        if sample_tokens is None: sample_tokens=self.input_dims
-        # Preprocess.
-        with t.no_grad():
-            x = self.preprocess(x)
-        assert isinstance(x, t.cuda.LongTensor)
-        assert (0 <= x).all() and (x < self.bins).all()
-        assert x.shape[0] == n_samples
-        xs = t.split(x, 1, dim=1)
-        xs = list(xs)
-        assert len(xs) < sample_tokens
+            N, D = n_samples, self.input_dims
+            if self.y_cond:
+                emsgOperation = f"asserting to validate y_cond is not None when self.y_cond is defined"
+                assert y_cond is not None, f"y_cond is None"
+                emsgOperation = f"asserting to validate y_cond.shape when self.y_cond is defined"
+                assert y_cond.shape == (N, 1, self.width), f"y_cond.shape != (N, 1, self.width)"
+            else:
+                emsgOperation = f"asserting to validate y_cond is None when self.y_cond is not defined"
+                assert y_cond is None, f"y_cond is not None"
 
-        N, D = n_samples, self.input_dims
-        if self.y_cond:
-            assert y_cond is not None
-            assert y_cond.shape == (N, 1, self.width)
-        else:
-            assert y_cond is None
+            if self.x_cond:
+                emsgOperation = f"asserting to validate x_cond is not None when self.x_cond is defined"
+                assert x_cond is not None, f"x_cond is None"
+                emsgOperation = f"asserting to validate x_cond.shape when self.x_cond is defined"
+                assert x_cond.shape == (N, D, self.width) or x_cond.shape == (N, 1, self.width), f"Got {x_cond.shape}, expected ({N}, {D}/{1}, {self.width})"
+            else:
+                emsgOperation = f"asserting to validate x_cond is None when self.x_cond is not defined"
+                assert x_cond is None, f"x_cond is not None"
+                emsgOperation = f"calling t.zeros() to set x_cond when self.x_cond is not defined"
+                x_cond = t.zeros((N, 1, self.width), dtype=t.float).to(self.device())
 
-        if self.x_cond:
-            assert x_cond is not None
-            assert x_cond.shape == (N, D, self.width) or x_cond.shape == (N, 1, self.width), f"Got {x_cond.shape}, expected ({N}, {D}/{1}, {self.width})"
-        else:
-            assert x_cond is None
-            x_cond = t.zeros((N, 1, self.width), dtype=t.float).cuda()
+            emsgOperation = f"defining scope as t.no_grad()"
+            with t.no_grad():
+                if get_preds:
+                    preds = []
 
-        with t.no_grad():
-            if get_preds:
-                preds = []
+                # Fill up key/value cache for past context by runing forward pass.
+                # We do so in chunks instead of doing the whole past in one forward pass to reduce max memory usage.
+                if chunk_size is None:
+                    emsgOperation = f"calling len(xs) to set chunk_size"
+                    chunk_size = len(xs)
+                #assert len(xs) % chunk_size == 0, f'expected {len(xs)} to be divisible by {chunk_size}'
+                emsgOperation = f"calling split_chunks() to set chunk_sizes"
+                chunk_sizes = split_chunks(len(xs), chunk_size)
+                emsgOperation = f"setting some local variables"
+                x_primes = []
+                start = 0
+                x = None
+                emsgOperation = f"iterating the return from get_range()"
+                for current_chunk_size in get_range(chunk_sizes):
+                    emsgOperation = f"iterating the range from start to start + chunk_size when current_chunk_size = " + str(current_chunk_size)
+                    xs_prime, conds_prime = [], []
+                    for sample_t in range(start, start + current_chunk_size):
+                        emsgOperation = f"calling get_emb() when current_chunk_size = " + str(current_chunk_size) + f" and sample_t = " + str(sample_t)
+                        x_prime, cond_prime = self.get_emb(sample_t, n_samples, x, x_cond, y_cond)
+                        emsgOperation = f"getting xs[sample_t] when current_chunk_size = " + str(current_chunk_size) + f" and sample_t = " + str(sample_t)
+                        x = xs[sample_t]
+                        emsgOperation = f"calling xs_prime.append() when current_chunk_size = " + str(current_chunk_size) + f" and sample_t = " + str(sample_t)
+                        xs_prime.append(x_prime)
+                        emsgOperation = f"calling conds_priime.append() when current_chunk_size = " + str(current_chunk_size) + f" and sample_t = " + str(sample_t)
+                        conds_prime.append(cond_prime)
+                    emsgOperation = f"re-calculating start when current_chunk_size = " + str(current_chunk_size)
+                    start = start + current_chunk_size
 
-            # Fill up key/value cache for past context by runing forward pass.
-            # We do so in chunks instead of doing the whole past in one forward pass to reduce max memory usage.
-            if chunk_size is None:
-                chunk_size = len(xs)
-            #assert len(xs) % chunk_size == 0, f'expected {len(xs)} to be divisible by {chunk_size}'
-            chunk_sizes = split_chunks(len(xs), chunk_size)
-            x_primes = []
-            start = 0
-            x = None
-            for current_chunk_size in get_range(chunk_sizes):
-                xs_prime, conds_prime = [], []
-                for sample_t in range(start, start + current_chunk_size):
-                    x_prime, cond_prime = self.get_emb(sample_t, n_samples, x, x_cond, y_cond)
-                    x = xs[sample_t]
-                    xs_prime.append(x_prime)
-                    conds_prime.append(cond_prime)
-                start = start + current_chunk_size
+                    emsgOperation = f"calling t.cat to set x_prime and cond_prime when current_chunk_size = " + str(current_chunk_size)
+                    x_prime, cond_prime = t.cat(xs_prime, dim=1), t.cat(conds_prime, dim=1)
+                    emsgOperation = f"asserting to validate x_prime.shape when current_chunk_size = " + str(current_chunk_size)
+                    assert x_prime.shape == (n_samples, current_chunk_size, self.width), f"x_prime.shape != (n_samples, current_chunk_size, self.width)"
+                    emsgOperation = f"asserting to validate cond_prime.shape when current_chunk_size = " + str(current_chunk_size)
+                    assert cond_prime.shape == (n_samples, current_chunk_size, self.width), f"cond_prime.shape != (n_samples, current_chunk_size, self.width)"
+                    emsgOperation = f"calling del xs_prime when current_chunk_size = " + str(current_chunk_size)
+                    del xs_prime
+                    emsgOperation = f"calling del conds_prime when current_chunk_size = " + str(current_chunk_size)
+                    del conds_prime
+                    if not get_preds:
+                        emsgOperation = f"calling del cond_prime when current_chunk_size = " + str(current_chunk_size) + f" and not get_preds"
+                        del cond_prime
+                    emsgOperation = f"calling self.transformer when current_chunk_size = " + str(current_chunk_size)
+                    x_prime = self.transformer(x_prime, encoder_kv=encoder_kv, sample=True, fp16=fp16)
 
-                x_prime, cond_prime = t.cat(xs_prime, dim=1), t.cat(conds_prime, dim=1)
-                assert x_prime.shape == (n_samples, current_chunk_size, self.width)
-                assert cond_prime.shape == (n_samples, current_chunk_size, self.width)
-                del xs_prime
-                del conds_prime
-                if not get_preds:
-                    del cond_prime
-                x_prime = self.transformer(x_prime, encoder_kv=encoder_kv, sample=True, fp16=fp16)
+                    if get_preds:
+                        if self.add_cond_after_transformer:
+                            x_prime = x_prime + cond_prime
+                        emsgOperation = f"asserting to validate x_prime.shape when current_chunk_size = " + str(current_chunk_size)
+                        assert x_prime.shape == (n_samples, current_chunk_size, self.width), f"x_prime.shape != (n_samples, current_chunk_size, self.width)"
+                        emsgOperation = f"calling del cond_prime when current_chunk_size = " + str(current_chunk_size)
+                        del cond_prime
+                        emsgOperation = f"appending x_prime to x_primes when current_chunk_size = " + str(current_chunk_size)
+                        x_primes.append(x_prime)
+                    else:
+                        emsgOperation = f"calling del x_prime when current_chunk_size = " + str(current_chunk_size) + f" and get_preds is falsey"
+                        del x_prime
 
                 if get_preds:
+                    emsgOperation = f"calling t.cat to set x_prime when get_preds is defined"
+                    x_prime = t.cat(x_primes, dim=1)
+                    emsgOperation = f"asserting to validate x_prime.shape when get_preds is defined"
+                    assert x_prime.shape == (n_samples, len(xs), self.width), f"x_prime.shape != (n_samples, len(xs), self.width)"
+                    emsgOperation = f"calling self.x_out() to set x_prime when get_preds is defined"
+                    x_prime = self.x_out(x_prime)  # Predictions
+                    emsgOperation = f"appending x_prime to preds when get_preds is defined"
+                    preds.append(x_prime)
+
+                emsgOperation = f"emptying cache 1"
+                empty_cache()
+                emsgOperation = f"calling transformer.check_cache()"
+                self.transformer.check_cache(n_samples, len(xs), fp16)
+
+                emsgOperation = f"getting xs[-1] to set x"
+                x = xs[-1]
+                emsgOperation = f"asserting to validate x.shape"
+                assert x.shape == (n_samples, 1), f"x.shape != (n_samples, 1)"
+                emsgOperation = f"emptying cache 2"
+                empty_cache()
+                emsgOperation = f"iterating on get_range() for sample_t"
+                for sample_t in get_range(range(len(xs), sample_tokens)):
+                    emsgOperation = f"calling get_emb() when sample_t = " + str(sample_t)
+                    x, cond = self.get_emb(sample_t, n_samples, x, x_cond, y_cond)
+                    emsgOperation = f"calling check_cache() when sample_t = " + str(sample_t)
+                    self.transformer.check_cache(n_samples, sample_t, fp16)
+                    emsgOperation = f"calling tranformer() when sample_t = " + str(sample_t)
+                    x = self.transformer(x, encoder_kv=encoder_kv, sample=True, fp16=fp16) # Transformer
                     if self.add_cond_after_transformer:
-                        x_prime = x_prime + cond_prime
-                    assert x_prime.shape == (n_samples, current_chunk_size, self.width)
-                    del cond_prime
-                    x_primes.append(x_prime)
-                else:
-                    del x_prime
+                        emsgOperation = f"setting x as x + cond when sample_t = " + str(sample_t)
+                        x = x + cond
+                    emsgOperation = f"asserting to validate x.shape when sample_t = " + str(sample_t)
+                    assert x.shape == (n_samples, 1, self.width), f"x.shape != (n_samples, 1, self.width)"
+                    emsgOperation = f"calling x_out() when sample_t = " + str(sample_t)
+                    x = self.x_out(x) # Predictions
+                    if get_preds:
+                        emsgOperation = f"appending x to preds when sample_t = " + str(sample_t) + f" and get_preds is truthy"
+                        preds.append(x)
+                    # Adjust logits
+                    emsgOperation = f"re-calculating x by dividing by temp when sample_t = " + str(sample_t)
+                    x = x / temp
+                    emsgOperation = f"calling filter_logits() to re-set x when sample_t = " + str(sample_t)
+                    x = filter_logits(x, top_k=top_k, top_p=top_p)
+                    emsgOperation = f"calling distributions.Categorical() to re-set x when sample_t = " + str(sample_t)
+                    x = t.distributions.Categorical(logits=x).sample() # Sample and replace x
+                    emsgOperation = f"asserting to validate x.shape when sample_t = " + str(sample_t)
+                    assert x.shape == (n_samples, 1), f"x.shape != (n_samples, 1)"
+                    emsgOperation = f"appending x.clone() to xs when sample_t = " + str(sample_t)
+                    xs.append(x.clone())
 
-            if get_preds:
-                x_prime = t.cat(x_primes, dim=1)
-                assert x_prime.shape == (n_samples, len(xs), self.width)
-                x_prime = self.x_out(x_prime)  # Predictions
-                preds.append(x_prime)
+                emsgOperation = f"final calling of del x"
+                del x
+                emsgOperation = f"calling transformer.del_cache()"
+                self.transformer.del_cache()
 
-            empty_cache()
-            self.transformer.check_cache(n_samples, len(xs), fp16)
-
-            x = xs[-1]
-            assert x.shape == (n_samples, 1)
-            empty_cache()
-            for sample_t in get_range(range(len(xs), sample_tokens)):
-                x, cond = self.get_emb(sample_t, n_samples, x, x_cond, y_cond)
-                self.transformer.check_cache(n_samples, sample_t, fp16)
-                x = self.transformer(x, encoder_kv=encoder_kv, sample=True, fp16=fp16) # Transformer
-                if self.add_cond_after_transformer:
-                    x = x + cond
-                assert x.shape == (n_samples, 1, self.width)
-                x = self.x_out(x) # Predictions
+                emsgOperation = f"final calling of t.cat() to re-set x"
+                x = t.cat(xs, dim=1)
                 if get_preds:
-                    preds.append(x)
-                # Adjust logits
-                x = x / temp
-                x = filter_logits(x, top_k=top_k, top_p=top_p)
-                x = t.distributions.Categorical(logits=x).sample() # Sample and replace x
-                assert x.shape == (n_samples, 1)
-                xs.append(x.clone())
-
-            del x
-            self.transformer.del_cache()
-
-            x = t.cat(xs, dim=1)
+                    emsgOperation = f"final calling of t.cat() to re-set preds"
+                    preds = t.cat(preds, dim=1)
+                emsgOperation = f"calling postprocess()"
+                x = self.postprocess(x, sample_tokens)
+            
             if get_preds:
-                preds = t.cat(preds, dim=1)
-            x = self.postprocess(x, sample_tokens)
-        if get_preds:
-            return x, preds
-        else:
-            return x
+                emsgOperation = f"returning x and preds"
+                return x, preds
+            else:
+                emsgOperation = f"returning x"
+                return x
+
+        except AssertionError as e:
+            emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except NameError as e:
+            emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
+        except Exception as e:
+            emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+            raise Exception(emsg)
 
     def check_sample(self, chunk_size):
         bs, l, d = (4, self.input_dims, self.width)
         prime = int(self.input_dims//8*7)
         enc_l = self.encoder_dims
         with t.no_grad():
-            y_cond = t.randn(bs, 1, d).cuda() if self.y_cond else None
-            x_cond = t.randn(bs, l, d).cuda() if self.x_cond else None
-            encoder_kv = t.randn(bs, enc_l, d).cuda()
+            y_cond = t.randn(bs, 1, d).to(self.device()) if self.y_cond else None
+            x_cond = t.randn(bs, l, d).to(self.device()) if self.x_cond else None
+            encoder_kv = t.randn(bs, enc_l, d).to(self.device())
 
             x, preds_sample = self.sample(bs, x_cond, y_cond, encoder_kv, get_preds=True)
             loss, preds_forw = self.forward(x, x_cond, y_cond, encoder_kv, get_preds=True)
@@ -388,7 +487,7 @@ class ConditionalAutoregressive2D(nn.Module):
             assert max_err <= 1e-6, f"Max err is {max_err} {[i for i in range(l) if t.max(t.abs(preds_sample - preds_forw)[:, i, :]) > 1e-6]}"
 
 
-def test_prior(input_shape, encoder_dims, blocks, heads, chunk_size):
+def test_prior(input_shape, encoder_dims, blocks, heads, chunk_size, device):
     bins = 512
     width = 32
     depth = 2
@@ -400,7 +499,7 @@ def test_prior(input_shape, encoder_dims, blocks, heads, chunk_size):
                                                     width=width, depth=depth, heads=heads,
                                                     attn_order=attn_order, blocks=blocks,
                                                     x_cond=x_cond, y_cond=y_cond,
-                                                    encoder_dims=encoder_dims, prime_len=prime_len).cuda()
+                                                    encoder_dims=encoder_dims, prime_len=prime_len).to(device)
                 prior.training = False
                 prior.check_sample(chunk_size)
                 print(f"Checked x_cond: {x_cond}, y_cond: {y_cond}, attn_order: {attn_order}")
@@ -417,5 +516,7 @@ if __name__ == '__main__':
         ((6144,), 384, 64, 2, 8),
         ((8192,), 512, 128, 2, 16),
     ]
+    device =f"cpu"
+    if t.cuda.is_available() : device=f"cuda"
     for test_case in test_cases:
         test_prior(*test_case)
