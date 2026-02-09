@@ -185,8 +185,7 @@ class SimplePrior(nn.Module):
             emsgOperation = f"getting xs[0].shape[0] to set N"
             N = xs[0].shape[0]
             emsgOperation = f"setting dtype_expected"
-            dtype_expected = t.int64
-            if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
+            dtype_expected = t.long
             emsgOperation = f"iterating xs"
             for i in range(len(xs)):
                 emsgOperation = f"getting xs[i], self.prior_shapes[i], self.prior_dims[i] to set variables when i = " + str(i) + "as xs are iterated"

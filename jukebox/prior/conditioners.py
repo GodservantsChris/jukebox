@@ -127,8 +127,7 @@ class SimpleEmbedding(nn.Module):
         emsgOperation = f""
         try: 
             assert len(y.shape) == 2, f"Expected shape with 2 dims, got {y.shape}"
-            dtype_expected = t.int64
-            if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
+            dtype_expected = t.long
             assert (y.dtype == dtype_expected), f"Expected dtype {dtype_expected}, got {y.dtype}"
             assert (0 <= y).all() and (y < self.bins).all(), f"Bins {self.bins}, got label {y}"
             return self.emb(y)

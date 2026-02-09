@@ -131,9 +131,8 @@ class ConditionalAutoregressive2D(nn.Module):
             x = self.preprocess(x)
 
         N, D = x.shape
-        dtype_expected = t.int64
-        if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
-        assert (x.dtype == dtype_expected),  f"Expected dtype {dtype_expected}, got {x.dtype}"
+        dtype_expected = t.long
+        assert (x.dtype == dtype_expected), f"Expected dtype {dtype_expected}, got {x.dtype}"            
         assert (0 <= x).all() and (x < self.bins).all()
 
         if self.y_cond:
@@ -197,9 +196,8 @@ class ConditionalAutoregressive2D(nn.Module):
             else:
                 x[:, 0] = self.start_token
         else:
-            dtype_expected = t.int64
-            if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
-            assert (x.dtype == dtype_expected),  f"Expected dtype {dtype_expected}, got {x.dtype}"
+            dtype_expected = t.long
+            assert (x.dtype == dtype_expected), f"Expected dtype {dtype_expected}, got {x.dtype}"            
             assert (0 <= x).all() and (x < self.bins).all()
             x = self.x_emb(x)
         assert x.shape == (n_samples, 1, self.width)
@@ -278,10 +276,9 @@ class ConditionalAutoregressive2D(nn.Module):
                 emsgOperation = f"calling preprocess() to set x"
                 x = self.preprocess(x)
             emsgOperation = f"setting dtype_expected"
-            dtype_expected = t.int64
-            if t.cuda.is_available() : dtype_expected = t.cuda.LongTensor
+            dtype_expected = t.long
             emsgOperation = f"asserting x.dtype is as expected"
-            assert (x.dtype == dtype_expected),  f"Expected dtype {dtype_expected}, got {x.dtype}"
+            assert (x.dtype == dtype_expected), f"Expected dtype {dtype_expected}, got {x.dtype}"
             emsgOperation = f"asserting to validate x"
             assert (0 <= x).all() and (x < self.bins).all()
             emsgOperation = f"asserting to validate x.shape[0]"
