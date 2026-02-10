@@ -5,25 +5,48 @@ from PIL import Image, ImageFilter
 import soundfile
 
 def save_html(logdir, x, zs, labels, alignments, hps):
-    level = hps.levels - 1 # Top level used
-    z = zs[level]
-    bs, total_length = z.shape[0], z.shape[1]
+    emsgContext = f"save_html.py.save_html()"
+    emsgOperation = f""
+    try:  
+        emsgOperation = f"getting hps.levels to set level"      
+        level = hps.levels - 1 # Top level used
+        emsgOperation = f"getting zs[level] to set z"
+        z = zs[level]
+        emsgOperation = f"getting z.shape[0], z.shape[1] to set bs, total_length"
+        bs, total_length = z.shape[0], z.shape[1]
+        emsgOperation = f"opening logdir/index.html"
+        with open(f'{logdir}/index.html', 'w') as html:
+            emsgOperation = f"printing head and title to html"
+            print(f"<html><head><title>{logdir}</title></head><body style='font-family: sans-serif; font-size: 1.4em; font-weight: bold; text-align: center; max-width:1024px; width: 100%; margin: auto;'>",
+                file=html)
+            emsgOperation = f"printing icon link to html"
+            print("<link rel='icon' href='data:;base64,iVBORw0KGgo='>", file=html)
+            emsgOperation = f"iterating items in bs"
+            for item in range(bs):
+                emsgOperation = f"creating a data dictionary object when item = " + str(item)
+                data = dict(wav=x[item].cpu().numpy(), sr=hps.sr,
+                            info=labels['info'][item],
+                            total_length=total_length,
+                            total_tokens=len(labels['info'][item]['full_tokens']),
+                            alignment=alignments[item] if alignments is not None else None)
+                emsgOperation = f"definiing item_dir when item = " + str(item)
+                item_dir = f'{logdir}/item_{item}'
+                emsgOperation = f"calling _save_item_html when item = " + str(item)
+                _save_item_html(item_dir, item, item, data)
+                emsgOperation = f"printing iframe to html when item = " + str(item)
+                print(f"<iframe style='height: 100%; width: 100%;' frameborder='0' scrolling='no' src='item_{item}/index.html'></iframe>", file=html)
+            emsgOperation = f"printing closing body and html elements to html"
+            print("</body></html>", file=html)
 
-    with open(f'{logdir}/index.html', 'w') as html:
-        print(f"<html><head><title>{logdir}</title></head><body style='font-family: sans-serif; font-size: 1.4em; font-weight: bold; text-align: center; max-width:1024px; width: 100%; margin: auto;'>",
-            file=html)
-        print("<link rel='icon' href='data:;base64,iVBORw0KGgo='>", file=html)
-
-        for item in range(bs):
-            data = dict(wav=x[item].cpu().numpy(), sr=hps.sr,
-                        info=labels['info'][item],
-                        total_length=total_length,
-                        total_tokens=len(labels['info'][item]['full_tokens']),
-                        alignment=alignments[item] if alignments is not None else None)
-            item_dir = f'{logdir}/item_{item}'
-            _save_item_html(item_dir, item, item, data)
-            print(f"<iframe style='height: 100%; width: 100%;' frameborder='0' scrolling='no' src='item_{item}/index.html'></iframe>", file=html)
-        print("</body></html>", file=html)  
+    except AssertionError as e:
+        emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+    except NameError as e:
+        emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
+    except Exception as e:
+        emsg = f'Exception while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)  
 
 def _save_item_html(item_dir, item_id, item_name, data):
     # replace gs:// with /root/samples/
