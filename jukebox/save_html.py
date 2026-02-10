@@ -65,26 +65,26 @@ def _save_item_html(item_dir, item_id, item_name, data):
                 file=html)
             emsgOperation = f"print icon link to html"
             print("<link rel='icon' href='data:;base64,iVBORw0KGgo='>", file=html)
-            emsgOperation = f"get data['total_length']"
+            emsgOperation = f"gettting data['total_length']"
             total_length = data['total_length']
-            emsgOperation = f"get data['total_tokens']"
+            emsgOperation = f"gettting data['total_tokens']"
             total_tokens = data['total_tokens']
-            emsgOperation = f"get data['alignment']"
+            emsgOperation = f"gettting data['alignment']"
             alignment = data['alignment']
-            emsgOperation = f"get data['info']['lyrics']"
+            emsgOperation = f"gettting data['info']['lyrics']"
             lyrics = data["info"]["lyrics"]
-            emsgOperation = f"get data['wav'], data['sr']"
+            emsgOperation = f"gettting data['wav'], data['sr']"
             wav, sr = data['wav'], data['sr']
-            emsgOperation = f"get data['info']['genre'], data['info']['artist']"
+            emsgOperation = f"gettting data['info']['genre'], data['info']['artist']"
             genre, artist = data["info"]["genre"], data["info"]["artist"]
 
             # Strip unused columns
-            if alignment is not None:
+            if (alignment is not None) and (len(alignment) > 0):
                 emsgOperation = f"assert to validate alignment.shape"
                 assert alignment.shape == (total_length, total_tokens)
                 emsgOperation = f"assert to validate lyrics"
                 assert len(lyrics) == total_tokens, f'Total_tokens: {total_tokens}, Lyrics Len: {len(lyrics)}. Lyrics: {lyrics}'
-                emsgOperation = f"get np.max(alignment, axis=0)"
+                emsgOperation = f"getting np.max(alignment, axis=0)"
                 max_attn_at_token = np.max(alignment, axis=0)
                 emsgOperation = f"assert to validate max_attn_at_token"
                 assert len(max_attn_at_token) == total_tokens
@@ -93,9 +93,9 @@ def _save_item_html(item_dir, item_id, item_name, data):
                     emsgOperation = f"check max_attn_at_token[token] when token = " + str(token)
                     if max_attn_at_token[token] > 0:
                         break
-                emsgOperation = f"get alignment[:,:token+1]"
+                emsgOperation = f"gettting alignment[:,:token+1]"
                 alignment = alignment[:,:token+1]
-                emsgOperation = f"get lyrics[:token+1]"
+                emsgOperation = f"gettting lyrics[:token+1]"
                 lyrics = lyrics[:token+1]
                 emsgOperation = f"increment total_tokens"
                 total_tokens = token+1
@@ -130,8 +130,6 @@ def _save_item_html(item_dir, item_id, item_name, data):
             soundfile.write(f'{item_dir}/{wav_src}', wav, samplerate=sr, format='wav')
             emsgOperation = f"printing audio element to html"
             print(f"<audio id='{wav_src}' src='{wav_src}' style='width: 100%;' controls></audio>", file=html)
-
-
             # Labels and Lyrics
             emsgOperation = f"printing pre element to html"
             print(f"<pre style='white-space: pre-wrap;'>", end="", file=html)
@@ -151,8 +149,8 @@ def _save_item_html(item_dir, item_id, item_name, data):
             with open(f'{item_dir}/lyrics.json', 'w') as f:
                 emsgOperation = f"dumping lyrics to lyrics.json file"
                 json.dump(lyrics, f)
-
-            if alignment is not None:
+            #
+            if (alignment is not None) and (len(alignment) > 0):
                 # JS for alignment animation
                 emsgOperation = f"printing JS for alignment animation to html"
                 print("""<script>
@@ -192,6 +190,7 @@ def _save_item_html(item_dir, item_id, item_name, data):
                     }
                 }
                 </script>""", file=html)
+            #
             emsgOperation = f"printing closing of body and html to html"
             print("</body></html>", file=html)
 
