@@ -188,7 +188,6 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
                     emsgOperation = f"getting alignments at level=" + str(level)
                     alignments = get_alignment(x, zs, labels[-1], priors[-1], sampling_kwargs[-1]['fp16'], hps)
                 emsgOperation = f"saving html at level=" + str(level)
-                print(emsgContext + f" while " + emsgOperation + f"; zs: " + str(zs) + f"; labels: " + str(labels) + f"; alignments: " + str(alignments))
                 save_html(logdir, x, zs, labels[-1], alignments, hps)
             else:
                 raise NameError(f"sz is empty.")
