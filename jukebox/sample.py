@@ -96,6 +96,9 @@ def sample_single_window(zs, labels, sampling_kwargs, level, prior, start, hps):
         
         else: raise NameError(f"zs is empty.")
     
+    except AssertionError as e:
+        emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
     except NameError as e:
         emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
         raise Exception(emsg)
@@ -121,6 +124,9 @@ def sample_level(zs, labels, sampling_kwargs, level, prior, total_length, hop_le
             zs = sample_partial_window(zs, labels, sampling_kwargs, level, prior, total_length, hps)
         emsgOperation = f"returning zs"
         return zs
+    except AssertionError as e:
+        emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
     except NameError as e:
         emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
         raise Exception(emsg)
@@ -192,6 +198,9 @@ def _sample(device, zs, labels, sampling_kwargs, priors, sample_levels, hps):
             else:
                 raise NameError(f"sz is empty.")
         return zs
+    except AssertionError as e:
+        emsg = f'AssertionError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e)        
+        raise Exception(emsg)
     except NameError as e:
         emsg = f'NameError while ' + emsgOperation + ' in ' + emsgContext + f': ' + repr(e) 
         raise Exception(emsg)
