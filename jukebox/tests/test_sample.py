@@ -140,17 +140,12 @@ def test_primed_sample(device, labels, priors, hps):
     print("dummy primed sample passed")
 
 def check_sample():
+    setup_env()
+    init_process_group(backend='gloo')
+    device = get_device()
     n_ctx = 8192
     n_samples = 4
     levels = 3
-    setup_env()
-    init_process_group(backend='gloo')
-    device = t.device("cpu")
-    use_cuda = t.cuda.is_available()
-    if use_cuda:
-        local_rank = 0
-        device = t.device("cuda", local_rank)
-        t.cuda.set_device(local_rank)
     priors = [DummyPrior(n_ctx, level, levels, device) for level in range(levels)]
     max_total_length, offset, sample_length = 4134368, 0, n_ctx*8*4*4
     y = t.tensor([max_total_length, offset, sample_length, 10, 1, -1, -1, -1, -1], dtype=t.long, device=device).view(1, 9).repeat(n_samples, 1)
@@ -168,5 +163,14 @@ def check_sample():
     })
     test_ancestral_sample(device, labels, priors, hps)
     test_primed_sample(device, labels, priors, hps)
+
+def get_device() -> t.device:    
+    device = t.device("cpu")
+    use_cuda = t.cuda.is_available()
+    if use_cuda:
+        local_rank = 0
+        device = t.device("cuda", local_rank)
+        t.cuda.device = device
+    return device
 
 check_sample()
