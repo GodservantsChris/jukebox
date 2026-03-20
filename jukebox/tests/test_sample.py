@@ -23,7 +23,7 @@ class DummyPrior:
         self.raw_to_tokens = int(np.prod(self.downsamples[:level+1]))
         self.sample_length = self.n_ctx*self.raw_to_tokens
 
-        print(f"Level:{level}, Cond downsample:{self.cond_downsample}, Raw to tokens:{self.raw_to_tokens}, Sample length:{self.sample_length}")
+        print(f"DummyPrior initialized for Level {level} with n_ctx = {n_ctx}: Cond downsample:{self.cond_downsample}; Raw to tokens:{self.raw_to_tokens}; Sample length:{self.sample_length}")
 
     def get_y(self, labels, start):
         y = labels['y'].clone()
@@ -97,23 +97,23 @@ def _sample(zs, labels,  priors, sample_levels, hps):
 
 # Ancestral sample
 def test_ancestral_sample(device, labels, priors, hps):
-    sample_levels = list(range(hps.levels))
+    #
     zs = [t.zeros(hps.n_samples,0,dtype=t.long, device=device) for _ in range(hps.levels)]
+    #
+    sample_levels = list(range(hps.levels))
+    # Sample
     zs = _sample(zs, labels, priors, sample_levels, hps)
-
+    #
     # Test
     for z in zs:
         total_length = z.shape[1]
         # Check sample
         assert ((z - t.arange(0, total_length, dtype=t.long, device=device).view(1, total_length)) == 0).all()
-
     print("dummy ancestral sample passed")
 
 def test_primed_sample(device, labels, priors, hps):
-    sample_levels = list(range(hps.levels))
-
+    #
     start = t.tensor([15, 23, 11, 9], dtype=t.long, device=device).view(4, 1)
-
     zs_in = []
     zs = []
     for i in reversed(range(3)):
@@ -124,9 +124,11 @@ def test_primed_sample(device, labels, priors, hps):
         z_in = t.cat([z_prime, z_rest], dim=1) + (4**i)*start
         zs_in.append(z_in)
         zs.append(z_prime + (4**i)*start)
-
+    #
+    sample_levels = list(range(hps.levels))
+    # Sample
     zs = _sample(zs, labels, priors, sample_levels, hps)
-
+    #
     # Test
     for z, z_in in zip(zs, zs_in):
         total_length = z.shape[1]
@@ -136,7 +138,6 @@ def test_primed_sample(device, labels, priors, hps):
         # Check sample
         z_rest = z[:,prime_length-1:] - z[:,prime_length-1:prime_length]
         assert ((z_rest - t.arange(0, total_length - prime_length + 1, dtype=t.long, device=device).view(1, total_length - prime_length + 1)) == 0).all()
-
     print("dummy primed sample passed")
 
 def check_sample():
