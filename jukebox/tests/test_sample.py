@@ -147,8 +147,15 @@ def check_sample():
     n_samples = 4
     levels = 3
     priors = [DummyPrior(n_ctx, level, levels, device) for level in range(levels)]
-    max_total_length, offset, sample_length = 4134368, 0, n_ctx*8*4*4
-    y = t.tensor([max_total_length, offset, sample_length, 10, 1, -1, -1, -1, -1], dtype=t.long, device=device).view(1, 9).repeat(n_samples, 1)
+    max_total_length = 4134368
+    offset = 0
+    sample_length = n_ctx*8*4*4
+    tensor_initial = t.tensor([max_total_length, offset, sample_length, 10, 1, -1, -1, -1, -1], 
+                 dtype=t.long, 
+                 device=device
+        )
+    tensor_reshaped = tensor_initial.view(1, 9)
+    y = tensor_reshaped.repeat(n_samples, 1)
     labels = [dict(y=y, info=[[]*n_samples]) for level in range(levels)]
     hps = Hyperparams({
         'levels': 3,
